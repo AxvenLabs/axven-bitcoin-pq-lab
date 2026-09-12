@@ -22,5 +22,9 @@ jobs:
         run: |
           python -m scripts.export_vectors --output /tmp/test-vectors-v1.json
           python -m json.tool /tmp/test-vectors-v1.json >/dev/null
+      - name: Export migration failure matrix
+        run: |
+          python -m scripts.migration_matrix --output /tmp/migration-matrix-v1.json
+          python -m json.tool /tmp/migration-matrix-v1.json >/dev/null
       - name: Benchmark smoke test
         run: python -m scripts.benchmark_model --iterations 100 --rounds 2 >/tmp/model-benchmark.json
