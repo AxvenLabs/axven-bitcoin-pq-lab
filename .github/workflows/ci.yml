@@ -20,7 +20,7 @@ jobs:
         run: python -m unittest discover -s tests -v
       - name: Export deterministic vectors
         run: |
-          python scripts/export_vectors.py --output /tmp/test-vectors-v1.json
+          python -m scripts.export_vectors --output /tmp/test-vectors-v1.json
           python -m json.tool /tmp/test-vectors-v1.json >/dev/null
       - name: Benchmark smoke test
-        run: python scripts/benchmark_model.py --iterations 100 --rounds 2 >/tmp/model-benchmark.json
+        run: python -m scripts.benchmark_model --iterations 100 --rounds 2 >/tmp/model-benchmark.json
