@@ -27,17 +27,17 @@ The lab studies how a legacy authorization path could migrate through an explici
 
 ## Status
 
-Repository foundation is being established. Cryptographic scheme selection and Bitcoin consensus/activation choices are intentionally **undecided** and require an explicit design decision before any implementation is locked to them.
+The scheme-neutral authorization model, deterministic migration/replay tests, canonical test-vector generator, and a non-cryptographic benchmark harness are now implemented. See [`docs/TEST_VECTORS.md`](docs/TEST_VECTORS.md).
+
+Cryptographic scheme selection and Bitcoin consensus/activation choices remain intentionally **undecided**. No benchmark currently claims Bitcoin Script, Schnorr/ECDSA, or post-quantum signature performance.
 
 ## Project structure
-
-The intended structure is:
 
 ```text
 docs/        research scope, threat model, decision records
 lab/         implementation-independent research model
 scripts/     reproducible experiment/benchmark entry points
-tests/       deterministic tests and vectors
+tests/       deterministic tests and vector contracts
 ```
 
 ## Relationship to Axven

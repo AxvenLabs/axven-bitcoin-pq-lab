@@ -18,3 +18,9 @@ jobs:
           python-version: "3.12"
       - name: Run deterministic model tests
         run: python -m unittest discover -s tests -v
+      - name: Export deterministic vectors
+        run: |
+          python -m scripts.export_vectors --output /tmp/test-vectors-v1.json
+          python -m json.tool /tmp/test-vectors-v1.json >/dev/null
+      - name: Benchmark smoke test
+        run: python -m scripts.benchmark_model --iterations 100 --rounds 2 >/tmp/model-benchmark.json
