@@ -30,3 +30,31 @@ jobs:
         run: python -m scripts.verify_upstream_pin >/tmp/upstream-pin.json
       - name: Benchmark smoke test
         run: python -m scripts.benchmark_model --iterations 100 --rounds 2 >/tmp/model-benchmark.json
+
+  vanilla-regtest:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Bitcoin Core build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential cmake pkgconf libevent-dev libboost-dev libsqlite3-dev
+      - name: Verify pinned upstream identity
+        run: python -m scripts.verify_upstream_pin >/tmp/upstream-pin.json
+      - name: Fetch pinned Bitcoin Core source
+        run: |
+          git init --quiet /tmp/bitcoin-core
+          git -C /tmp/bitcoin-core remote add origin https://github.com/bitcoin/bitcoin.git
+          git -C /tmp/bitcoin-core fetch --quiet --depth=1 origin refs/tags/v31.1:refs/tags/v31.1
+          git -C /tmp/bitcoin-core checkout --quiet --detach v31.1^{}
+          test "$(git -C /tmp/bitcoin-core rev-parse HEAD)" = "$(python -c 'import json; print(json.load(open("upstream/bitcoin-core.json"))["commit_sha"])')"
+      - name: Build vanilla Bitcoin Core
+        run: |
+          cmake -S /tmp/bitcoin-core -B /tmp/bitcoin-core/build \
+            -DBUILD_GUI=OFF \
+            -DENABLE_IPC=OFF \
+            -DBUILD_BENCH=OFF \
+            -DBUILD_TESTS=OFF
+          cmake --build /tmp/bitcoin-core/build -j2
+      - name: Run isolated vanilla regtest baseline
+        run: bash scripts/run_vanilla_regtest_baseline.sh /tmp/bitcoin-core/build/bin | tee /tmp/vanilla-regtest-baseline.json
