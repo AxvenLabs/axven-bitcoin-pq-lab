@@ -52,10 +52,7 @@ def deterministic_vectors() -> list[dict[str, object]]:
             {
                 "name": f"{mode.value}-auth-l{int(legacy_ok)}-p{int(pq_ok)}",
                 "state": {"mode": state.mode.value, "epoch": state.epoch},
-                "context": {
-                    **asdict(context),
-                    "mode": context.mode.value,
-                },
+                "context": {**asdict(context), "mode": context.mode.value},
                 "authorization": asdict(auth),
                 "expected": expected,
             }
@@ -98,6 +95,28 @@ def deterministic_vectors() -> list[dict[str, object]]:
                 epoch=baseline.epoch,
                 destination_commitment="44" * 32,
                 mode=baseline.mode,
+            ),
+        ),
+        (
+            "wrong-epoch",
+            Context(
+                chain_id=baseline.chain_id,
+                txid=baseline.txid,
+                vout=baseline.vout,
+                epoch=baseline.epoch + 1,
+                destination_commitment=baseline.destination_commitment,
+                mode=baseline.mode,
+            ),
+        ),
+        (
+            "wrong-mode",
+            Context(
+                chain_id=baseline.chain_id,
+                txid=baseline.txid,
+                vout=baseline.vout,
+                epoch=baseline.epoch,
+                destination_commitment=baseline.destination_commitment,
+                mode=Mode.PQ,
             ),
         ),
     )
