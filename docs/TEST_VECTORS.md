@@ -18,10 +18,10 @@ This document describes the first reproducible artifact layer for Axven Bitcoin 
 
 The `cryptographic_scheme` field is deliberately `null`. `legacy_ok` and `pq_ok` are model inputs, not signature implementations. They must not be interpreted as measured cryptographic security.
 
-Export a canonical JSON document with:
+Export a canonical JSON document from the repository root with:
 
 ```bash
-python scripts/export_vectors.py
+python -m scripts.export_vectors
 ```
 
 The default output is `artifacts/test-vectors-v1.json`. Repeated exports from the same revision must be byte-identical.
@@ -31,7 +31,7 @@ The default output is `artifacts/test-vectors-v1.json`. Repeated exports from th
 `scripts/benchmark_model.py` measures only Python authorization-state/transcript overhead. It reports canonical context size, authorization timing, and Python `tracemalloc` peak memory.
 
 ```bash
-python scripts/benchmark_model.py --iterations 10000 --rounds 7
+python -m scripts.benchmark_model --iterations 10000 --rounds 7
 ```
 
 It deliberately does **not** claim to measure:
