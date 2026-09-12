@@ -1,0 +1,7 @@
+{
+  "repository": "https://github.com/bitcoin/bitcoin.git",
+  "tag": "v31.1",
+  "tag_object_sha": "bfa6a4b79cd4c1562fd32857e3147763efae37fb",
+  "commit_sha": "9be056a8a72b624dae9623b2f7bded92c2a21c91",
+  "purpose": "Research-only Bitcoin Core regtest baseline; no consensus or mainnet deployment decision."
+}

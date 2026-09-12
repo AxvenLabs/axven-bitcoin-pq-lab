@@ -26,5 +26,7 @@ jobs:
         run: |
           python -m scripts.migration_matrix --output /tmp/migration-matrix-v1.json
           python -m json.tool /tmp/migration-matrix-v1.json >/dev/null
+      - name: Verify pinned Bitcoin Core upstream identity
+        run: python -m scripts.verify_upstream_pin >/tmp/upstream-pin.json
       - name: Benchmark smoke test
         run: python -m scripts.benchmark_model --iterations 100 --rounds 2 >/tmp/model-benchmark.json
