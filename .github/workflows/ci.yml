@@ -70,3 +70,16 @@ jobs:
         run: |
           bash scripts/run_vanilla_transaction_benchmark.sh /tmp/bitcoin-core/build/bin | tee /tmp/vanilla-transaction-metrics.json
           python -m json.tool /tmp/vanilla-transaction-metrics.json >/dev/null
+      - name: Run decision-gated real regtest preflight
+        run: |
+          bash scripts/run_regtest_demo_preflight.sh /tmp/bitcoin-core/build/bin | tee /tmp/regtest-demo-preflight.json
+          python -m json.tool /tmp/regtest-demo-preflight.json >/dev/null
+          python - <<'PY'
+          import json
+          report = json.load(open('/tmp/regtest-demo-preflight.json'))
+          assert report['research_only'] is True
+          assert report['bitcoin_core_modified'] is False
+          assert report['experiment_on_status'] == 'blocked_pending_explicit_security_decisions'
+          assert report['scheme_selected'] is False
+          assert report['hybrid_semantics_selected'] is False
+          PY
