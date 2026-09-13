@@ -1,0 +1,52 @@
+{
+  "schema_version": 1,
+  "research_only": true,
+  "bitcoin_core_endorsement": false,
+  "mainnet_deployment": false,
+  "scope": "isolated-regtest-authorization-migration-research",
+  "preserve_upstream_outside_experiment": true,
+  "assets": [
+    "legacy_utxo_spend_authorization",
+    "experimental_authorization_evidence",
+    "transaction_and_test_vector_integrity",
+    "benchmark_and_scenario_provenance",
+    "rollback_and_restart_state_consistency"
+  ],
+  "adversary_capabilities": [
+    "replay_stale_lab_evidence",
+    "reorder_or_duplicate_experimental_messages",
+    "supply_malformed_or_oversized_authorization_artifacts",
+    "trigger_restart_or_rollback_during_experiment",
+    "present_mismatched_context_or_network_identity",
+    "attempt_downgrade_to_experiment_off_or_incomplete_evidence",
+    "consume_cpu_or_memory_with_invalid_verification_inputs"
+  ],
+  "required_properties": [
+    "fail_closed_on_malformed_experimental_evidence",
+    "bind_experimental_evidence_to_explicit_regtest_context",
+    "preserve_vanilla_behavior_when_experiment_is_off",
+    "make_replay_rollback_and_restart_results_reproducible",
+    "measure_size_cpu_and_memory_costs_without_claiming_production_security",
+    "keep_all_high_impact_design_choices_as_explicit_decision_gates"
+  ],
+  "out_of_scope": [
+    "mainnet_activation_or_fork_deployment",
+    "new_coin_token_or_network_launch",
+    "production_wallet_key_custody",
+    "recovery_authority_or_trust_root_design",
+    "legacy_or_lost_utxo_policy",
+    "cryptographic_scheme_selection",
+    "final_hybrid_authorization_semantics"
+  ],
+  "decision_gates": [
+    "consensus_or_mainnet_activation",
+    "fork_deployment",
+    "cryptographic_scheme_selection",
+    "legacy_utxo_treatment",
+    "lost_coin_treatment",
+    "recovery_authority",
+    "trust_roots",
+    "key_custody",
+    "production_security_semantics"
+  ]
+}
