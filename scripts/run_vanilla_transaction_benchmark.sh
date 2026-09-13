@@ -41,6 +41,13 @@ MINER_ADDRESS="$("${CLI[@]}" -rpcwallet=benchmark getnewaddress "miner" "bech32"
 DESTINATION="$("${CLI[@]}" -rpcwallet=benchmark getnewaddress "destination" "bech32")"
 TXID="$("${CLI[@]}" -rpcwallet=benchmark sendtoaddress "${DESTINATION}" 1.0)"
 "${CLI[@]}" generatetoaddress 1 "${MINER_ADDRESS}" >/dev/null
-"${CLI[@]}" getrawtransaction "${TXID}" true >"${TX_JSON}"
+
+# getrawtransaction without txindex is not guaranteed to locate a confirmed
+# transaction by txid alone. Resolve the containing block from the wallet and
+# pass that exact block hash so this benchmark works with the same unmodified
+# Bitcoin Core build and does not weaken the node configuration by enabling
+# an extra index solely for measurement.
+BLOCKHASH="$("${CLI[@]}" -rpcwallet=benchmark gettransaction "${TXID}" | python3 -c 'import json, sys; obj=json.load(sys.stdin); blockhash=obj.get("blockhash"); confirmations=obj.get("confirmations", 0); assert isinstance(blockhash, str) and len(blockhash) == 64 and confirmations > 0, "transaction must be confirmed with a blockhash"; print(blockhash)')"
+"${CLI[@]}" getrawtransaction "${TXID}" true "${BLOCKHASH}" >"${TX_JSON}"
 
 python3 -m scripts.transaction_metrics "${TX_JSON}"
