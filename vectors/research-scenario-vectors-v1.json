@@ -1,0 +1,50 @@
+{
+  "schema_version": 1,
+  "research_only": true,
+  "endorsement": "not endorsed by Bitcoin Core",
+  "deployment_scope": "isolated regtest/lab only; not intended for mainnet deployment",
+  "preserve_upstream_outside_experiment": true,
+  "vectors": [
+    {
+      "id": "rollback-experiment-off-equivalence",
+      "category": "rollback",
+      "precondition": "vanilla regtest baseline and experiment-off run use the same pinned Bitcoin Core source identity",
+      "action": "compare normalized observable baseline fields after experiment-off execution",
+      "expected": "equivalent",
+      "decision_gates": []
+    },
+    {
+      "id": "restart-state-reconstruction",
+      "category": "failure-recovery",
+      "precondition": "research harness state is reconstructible from explicit lab inputs",
+      "action": "restart the harness without changing upstream Bitcoin Core state semantics",
+      "expected": "deterministic reconstruction of lab evidence",
+      "decision_gates": []
+    },
+    {
+      "id": "evidence-context-replay-rejection",
+      "category": "replay",
+      "precondition": "two lab evidence records have distinct declared context identities",
+      "action": "attempt to validate evidence under the wrong context identity",
+      "expected": "reject",
+      "decision_gates": []
+    },
+    {
+      "id": "migration-hypothesis-unresolved",
+      "category": "migration",
+      "precondition": "a future experiment requests authorization migration behavior",
+      "action": "inspect whether the requested behavior requires a high-impact Bitcoin decision",
+      "expected": "stop at explicit decision gate before implementation",
+      "decision_gates": [
+        "cryptographic_scheme_selection",
+        "hybrid_authorization_semantics",
+        "bitcoin_consensus_or_activation",
+        "legacy_or_lost_utxo_treatment",
+        "recovery_authority",
+        "trust_roots",
+        "key_custody",
+        "production_security_semantics"
+      ]
+    }
+  ]
+}
