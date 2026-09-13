@@ -12,7 +12,7 @@ from __future__ import annotations
 import argparse
 import importlib.metadata
 import json
-import os
+import platform
 import resource
 import statistics
 import subprocess
@@ -80,7 +80,7 @@ def load_vector(path: Path, candidate: str) -> tuple[bytes, bytes, bytes, bytes]
 
 def _sample_rss_bytes() -> int:
     usage = resource.getrusage(resource.RUSAGE_SELF)
-    return normalize_maxrss(usage.ru_maxrss, sys.platform == "darwin" and "Darwin" or "Linux")
+    return normalize_maxrss(usage.ru_maxrss, platform.system())
 
 
 def run_worker(candidate: str, vector_file: Path, iterations: int, source_commit: str) -> dict:
