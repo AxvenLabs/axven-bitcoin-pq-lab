@@ -1,0 +1,4 @@
+# Research-only benchmark dependency. Not a production/deployment selection.
+# PyPI mldsa 1.0.1 universal wheel, published 2026-07-26.
+# Source provenance: FiloSottile/mldsa-py@b84df503a3cf57ede27f33a81185a63305579a95
+mldsa==1.0.1 --hash=sha256:cad0a75124c5a6f4c1efe0e013039e9b0a1a86a9bb8ec5a75d6cf71a45ce08f9
