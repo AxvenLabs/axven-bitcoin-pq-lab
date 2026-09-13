@@ -62,3 +62,7 @@ jobs:
         run: python -m scripts.run_regtest_lab --mode off --bin-dir /tmp/bitcoin-core/build/bin | tee /tmp/experiment-off-regtest-baseline.json
       - name: Require experiment-off equivalence
         run: python -m scripts.compare_regtest_baselines /tmp/vanilla-regtest-baseline.json /tmp/experiment-off-regtest-baseline.json
+      - name: Measure vanilla transaction structure
+        run: |
+          bash scripts/run_vanilla_transaction_benchmark.sh /tmp/bitcoin-core/build/bin | tee /tmp/vanilla-transaction-metrics.json
+          python -m json.tool /tmp/vanilla-transaction-metrics.json >/dev/null
