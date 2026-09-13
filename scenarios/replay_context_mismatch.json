@@ -1,0 +1,50 @@
+{
+  "schema_version": 1,
+  "research_only": true,
+  "network": "regtest",
+  "upstream_behavior_outside_experiment": "preserved",
+  "scenario_id": "replay-context-mismatch-001",
+  "title": "Lab evidence replay under mismatched context",
+  "purpose": "Verify that lab evidence bound to one recorded experiment context is not silently treated as comparable evidence in a different context, without defining Bitcoin authorization or consensus semantics.",
+  "assumptions": [
+    "The replay target is local regtest only.",
+    "The replayed object is benchmark or scenario evidence, not a Bitcoin mainnet transaction or authorization rule.",
+    "Context mismatch handling is limited to lab evidence validation and does not prescribe consensus behavior."
+  ],
+  "steps": [
+    {
+      "id": "baseline",
+      "phase": "baseline",
+      "action": "Record source identity and experiment-off regtest context for a lab evidence record.",
+      "expectation": "observe",
+      "evidence": "source-context record"
+    },
+    {
+      "id": "prepare-mismatch",
+      "phase": "prepare",
+      "action": "Prepare a distinct lab context with intentionally different provenance metadata.",
+      "expectation": "observe",
+      "evidence": "mismatched-context record"
+    },
+    {
+      "id": "exercise-replay",
+      "phase": "exercise",
+      "action": "Attempt to reuse the first lab evidence record as if it belonged to the mismatched context.",
+      "expectation": "reject",
+      "evidence": "context-validation rejection record"
+    },
+    {
+      "id": "rollback",
+      "phase": "rollback",
+      "action": "Return to experiment-off state and confirm the baseline observations remain unchanged.",
+      "expectation": "unchanged",
+      "evidence": "post-replay rollback record"
+    }
+  ],
+  "decision_gates": [
+    "Any Bitcoin transaction replay or authorization semantics require explicit user review before implementation.",
+    "Any post-quantum signature scheme selection requires explicit user review.",
+    "Any hybrid authorization, consensus, activation, fork, legacy or lost UTXO semantics require explicit user review.",
+    "Any recovery authority, trust-root, key-custody, or production security semantics require explicit user review."
+  ]
+}
