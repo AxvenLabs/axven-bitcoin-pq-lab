@@ -1,7 +1,12 @@
 import unittest
 
 try:
-    from scripts.benchmark_mldsa_candidates import CANDIDATES, benchmark_candidate, build_report
+    from scripts.benchmark_mldsa_candidates import (
+        CANDIDATES,
+        EXPECTED_SIZES,
+        benchmark_candidate,
+        build_report,
+    )
 except ModuleNotFoundError as exc:
     if exc.name == "cryptography":
         raise unittest.SkipTest("cryptography benchmark dependency is exercised in dedicated CI job")
@@ -11,6 +16,7 @@ except ModuleNotFoundError as exc:
 class MldsaCandidateBenchmarkTests(unittest.TestCase):
     def test_report_is_research_only_and_does_not_select_winner(self):
         report = build_report(iterations=3)
+        self.assertEqual(report["schema_version"], 2)
         self.assertTrue(report["research_only"])
         self.assertFalse(report["mainnet_intended"])
         self.assertFalse(report["parameter_set_selected"])
@@ -22,16 +28,25 @@ class MldsaCandidateBenchmarkTests(unittest.TestCase):
         self.assertEqual(report["hybrid_research_semantics"], "classical-and-pq")
         self.assertEqual({row["candidate"] for row in report["candidates"]}, set(CANDIDATES))
 
-    def test_each_candidate_has_positive_sizes_and_correctness_oracle(self):
+    def test_each_candidate_matches_fips204_sizes_and_has_measurements(self):
         report = build_report(iterations=3)
         for row in report["candidates"]:
             with self.subTest(candidate=row["candidate"]):
-                self.assertGreater(row["public_key_bytes"], 0)
-                self.assertGreater(row["signature_bytes"], 0)
-                self.assertGreater(row["verify_median_ns"], 0)
+                expected = EXPECTED_SIZES[row["candidate"]]
+                self.assertEqual(row["public_key_bytes"], expected["public_key_bytes"])
+                self.assertEqual(row["signature_bytes"], expected["signature_bytes"])
+                self.assertGreater(row["verify_wall_median_ns"], 0)
+                self.assertGreater(row["verify_cpu_median_ns"], 0)
+                self.assertGreaterEqual(row["python_peak_alloc_bytes"], 0)
                 self.assertGreater(row["process_max_rss_bytes"], 0)
                 self.assertTrue(row["correctness_oracle"]["valid_signature_accepted"])
                 self.assertTrue(row["correctness_oracle"]["altered_message_rejected"])
+
+    def test_expected_size_contract_covers_all_candidates(self):
+        self.assertEqual(set(EXPECTED_SIZES), set(CANDIDATES))
+        self.assertEqual(EXPECTED_SIZES["ML-DSA-44"], {"public_key_bytes": 1312, "signature_bytes": 2420})
+        self.assertEqual(EXPECTED_SIZES["ML-DSA-65"], {"public_key_bytes": 1952, "signature_bytes": 3309})
+        self.assertEqual(EXPECTED_SIZES["ML-DSA-87"], {"public_key_bytes": 2592, "signature_bytes": 4627})
 
     def test_invalid_inputs_fail_closed(self):
         with self.assertRaises(ValueError):
