@@ -35,7 +35,8 @@ class BenchmarkReportTests(unittest.TestCase):
         self.assertEqual(summarize_samples([5, 1, 3, 2, 4]), {"median": 3.0, "p95": 5.0})
 
     def test_valid_report_passes(self):
-        self.assertIs(validate_report(sample_report()), sample_report())
+        report = sample_report()
+        self.assertIs(validate_report(report), report)
 
     def test_rejects_missing_research_label(self):
         with self.assertRaisesRegex(ValueError, "research_only"):
