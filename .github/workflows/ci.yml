@@ -58,3 +58,7 @@ jobs:
           cmake --build /tmp/bitcoin-core/build -j2
       - name: Run isolated vanilla regtest baseline
         run: bash scripts/run_vanilla_regtest_baseline.sh /tmp/bitcoin-core/build/bin | tee /tmp/vanilla-regtest-baseline.json
+      - name: Run lab with experiment explicitly off
+        run: python -m scripts.run_regtest_lab --mode off --bin-dir /tmp/bitcoin-core/build/bin | tee /tmp/experiment-off-regtest-baseline.json
+      - name: Require experiment-off equivalence
+        run: python -m scripts.compare_regtest_baselines /tmp/vanilla-regtest-baseline.json /tmp/experiment-off-regtest-baseline.json
