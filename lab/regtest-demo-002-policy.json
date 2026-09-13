@@ -1,0 +1,26 @@
+{
+  "schema_version": 1,
+  "research_only": true,
+  "endorsed_by_bitcoin_core": false,
+  "mainnet_intended": false,
+  "network_scope": "isolated-regtest-only",
+  "pq_candidate_family": "ML-DSA",
+  "hybrid_authorization_semantics": "classical-and-pq",
+  "selection_scope": "reversible-research-candidate",
+  "parameter_set_selected": false,
+  "bitcoin_consensus_change_selected": false,
+  "activation_or_fork_selected": false,
+  "legacy_utxo_treatment_selected": false,
+  "lost_coin_treatment_selected": false,
+  "recovery_authority_selected": false,
+  "trust_root_selected": false,
+  "key_custody_selected": false,
+  "production_security_semantics_selected": false,
+  "security_engine_source_used": false,
+  "notes": [
+    "ML-DSA is approved only as the first post-quantum research candidate family for the isolated regtest experiment.",
+    "The hybrid research hypothesis for this experiment requires both the classical authorization factor and the ML-DSA factor to succeed.",
+    "No ML-DSA parameter set is selected by this policy. ML-DSA-44, ML-DSA-65, and ML-DSA-87 may be measured as named candidates without selecting one for deployment.",
+    "This policy does not alter Bitcoin Core, Bitcoin consensus, Script semantics, mainnet activation, or any production deployment decision."
+  ]
+}
