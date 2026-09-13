@@ -30,6 +30,10 @@ jobs:
         run: python -m scripts.verify_upstream_pin >/tmp/upstream-pin.json
       - name: Benchmark smoke test
         run: python -m scripts.benchmark_model --iterations 100 --rounds 2 >/tmp/model-benchmark.json
+      - name: Measure scheme-neutral opaque authorization material sizes
+        run: |
+          python -m scripts.benchmark_auth_material_size >/tmp/opaque-auth-material-size.json
+          python -m json.tool /tmp/opaque-auth-material-size.json >/dev/null
 
   vanilla-regtest:
     runs-on: ubuntu-latest
