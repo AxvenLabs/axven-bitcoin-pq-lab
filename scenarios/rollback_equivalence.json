@@ -1,0 +1,43 @@
+{
+  "schema_version": 1,
+  "research_only": true,
+  "network": "regtest",
+  "upstream_behavior_outside_experiment": "preserved",
+  "scenario_id": "rollback-equivalence-001",
+  "title": "Experiment-off rollback equivalence",
+  "purpose": "Verify that disabling a reversible lab experiment returns the observable regtest path to the previously recorded baseline without defining new authorization semantics.",
+  "assumptions": [
+    "Bitcoin Core behavior outside the isolated experiment path remains unchanged.",
+    "The scenario runs only on local regtest and does not launch a public network.",
+    "No post-quantum scheme or hybrid authorization rule is selected by this scenario."
+  ],
+  "steps": [
+    {
+      "id": "baseline",
+      "phase": "baseline",
+      "action": "Record the experiment-off regtest evidence set before any reversible lab activity.",
+      "expectation": "observe",
+      "evidence": "experiment-off baseline record"
+    },
+    {
+      "id": "prepare",
+      "phase": "prepare",
+      "action": "Prepare isolated reversible lab state without changing upstream behavior outside the experiment path.",
+      "expectation": "observe",
+      "evidence": "prepared lab-state record"
+    },
+    {
+      "id": "rollback",
+      "phase": "rollback",
+      "action": "Disable the isolated experiment and restore the pre-experiment lab state.",
+      "expectation": "unchanged",
+      "evidence": "post-rollback equivalence record"
+    }
+  ],
+  "decision_gates": [
+    "Any post-quantum signature scheme selection requires explicit user review.",
+    "Any hybrid authorization or Bitcoin consensus semantics require explicit user review.",
+    "Any activation, fork deployment, legacy or lost UTXO treatment requires explicit user review.",
+    "Any recovery authority, trust-root, key-custody, or production security semantics require explicit user review."
+  ]
+}
