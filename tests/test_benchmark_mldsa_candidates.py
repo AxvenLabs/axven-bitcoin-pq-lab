@@ -1,6 +1,11 @@
 import unittest
 
-from scripts.benchmark_mldsa_candidates import CANDIDATES, benchmark_candidate, build_report
+try:
+    from scripts.benchmark_mldsa_candidates import CANDIDATES, benchmark_candidate, build_report
+except ModuleNotFoundError as exc:
+    if exc.name == "cryptography":
+        raise unittest.SkipTest("cryptography benchmark dependency is exercised in dedicated CI job")
+    raise
 
 
 class MldsaCandidateBenchmarkTests(unittest.TestCase):
