@@ -35,6 +35,52 @@ jobs:
           python -m scripts.benchmark_auth_material_size >/tmp/opaque-auth-material-size.json
           python -m json.tool /tmp/opaque-auth-material-size.json >/dev/null
 
+  mldsa-research-benchmark:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install hash-pinned ML-DSA research verifier
+        run: python -m pip install --require-hashes --only-binary=:all: -r requirements-mldsa-bench.txt
+      - name: Fetch exact upstream ML-DSA verification vectors
+        run: |
+          git init --quiet /tmp/mldsa-py
+          git -C /tmp/mldsa-py remote add origin https://github.com/FiloSottile/mldsa-py.git
+          git -C /tmp/mldsa-py fetch --quiet --depth=1 origin refs/tags/v1.0.1:refs/tags/v1.0.1
+          git -C /tmp/mldsa-py checkout --quiet --detach v1.0.1^{}
+          test "$(git -C /tmp/mldsa-py rev-parse HEAD)" = "b84df503a3cf57ede27f33a81185a63305579a95"
+      - name: Benchmark real ML-DSA-44/65/87 verification candidates
+        run: |
+          python -m scripts.benchmark_mldsa_candidates \
+            --testdata-dir /tmp/mldsa-py/tests/testdata \
+            --iterations 3 \
+            --source-commit b84df503a3cf57ede27f33a81185a63305579a95 \
+            | tee /tmp/mldsa-candidate-benchmark.json
+          python -m json.tool /tmp/mldsa-candidate-benchmark.json >/dev/null
+      - name: Require fail-closed research-only benchmark report
+        run: |
+          python - <<'PY'
+          import json
+          report = json.load(open('/tmp/mldsa-candidate-benchmark.json'))
+          assert report['research_only'] is True
+          assert report['endorsed_by_bitcoin_core'] is False
+          assert report['mainnet_intended'] is False
+          assert report['pq_candidate_family'] == 'ML-DSA'
+          assert report['hybrid_research_semantics'] == 'classical-and-pq'
+          assert report['parameter_set_selected'] is False
+          assert report['deployment_winner_selected'] is False
+          assert report['bitcoin_core_modified'] is False
+          assert report['bitcoin_script_semantics_selected'] is False
+          assert report['consensus_change_selected'] is False
+          assert report['library_version'] == '1.0.1'
+          assert report['library_source_commit'] == 'b84df503a3cf57ede27f33a81185a63305579a95'
+          assert [r['candidate'] for r in report['results']] == ['ML-DSA-44', 'ML-DSA-65', 'ML-DSA-87']
+          assert all(r['positive_oracle_verified'] is True for r in report['results'])
+          assert all(r['negative_oracle_rejected'] is True for r in report['results'])
+          PY
+
   vanilla-regtest:
     runs-on: ubuntu-latest
     steps:
