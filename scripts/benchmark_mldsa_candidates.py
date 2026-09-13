@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 import platform
 import resource
 import statistics
@@ -45,6 +46,14 @@ def _rss_bytes() -> int:
 
 def _median(values: list[int]) -> int:
     return int(statistics.median(values))
+
+
+def _p95(values: list[int]) -> int:
+    if len(values) < 3:
+        raise ValueError("at least three samples are required")
+    ordered = sorted(values)
+    rank = max(1, math.ceil(0.95 * len(ordered)))
+    return ordered[rank - 1]
 
 
 def benchmark_candidate(name: str, iterations: int, message: bytes) -> dict:
@@ -101,10 +110,14 @@ def benchmark_candidate(name: str, iterations: int, message: bytes) -> dict:
         "public_key_bytes": len(public_raw),
         "signature_bytes": len(signature),
         "iterations": iterations,
+        "verify_wall_samples_ns": wall_timings,
         "verify_wall_median_ns": _median(wall_timings),
+        "verify_wall_p95_ns": _p95(wall_timings),
         "verify_wall_min_ns": min(wall_timings),
         "verify_wall_max_ns": max(wall_timings),
+        "verify_cpu_samples_ns": cpu_timings,
         "verify_cpu_median_ns": _median(cpu_timings),
+        "verify_cpu_p95_ns": _p95(cpu_timings),
         "verify_cpu_min_ns": min(cpu_timings),
         "verify_cpu_max_ns": max(cpu_timings),
         "python_peak_alloc_bytes": python_peak_alloc,
@@ -120,7 +133,7 @@ def benchmark_candidate(name: str, iterations: int, message: bytes) -> dict:
 def build_report(iterations: int = 25, message: bytes = b"axven-bitcoin-pq-lab-bench-008") -> dict:
     rows = [benchmark_candidate(name, iterations, message) for name in CANDIDATES]
     return {
-        "schema_version": 2,
+        "schema_version": 3,
         "research_only": True,
         "endorsed_by_bitcoin_core": False,
         "mainnet_intended": False,
@@ -132,6 +145,8 @@ def build_report(iterations: int = 25, message: bytes = b"axven-bitcoin-pq-lab-b
         "bitcoin_core_modified": False,
         "bitcoin_script_semantics_selected": False,
         "consensus_change_selected": False,
+        "raw_sample_evidence": True,
+        "percentile_method": "nearest-rank",
         "cryptography_version": cryptography.__version__,
         "openssl_version": backend.openssl_version_text(),
         "python_version": platform.python_version(),
