@@ -1,0 +1,50 @@
+{
+  "schema_version": 1,
+  "research_only": true,
+  "network": "regtest",
+  "upstream_behavior_outside_experiment": "preserved",
+  "scenario_id": "restart-reconstruction-001",
+  "title": "Reversible restart and state reconstruction",
+  "purpose": "Exercise process restart and reconstruction of reversible lab state while collecting evidence that upstream regtest behavior outside the isolated experiment path remains unchanged.",
+  "assumptions": [
+    "The scenario uses only local regtest instances.",
+    "The isolated experiment can be disabled without changing Bitcoin Core outside the experiment path.",
+    "No production recovery authority or key-custody rule is implied."
+  ],
+  "steps": [
+    {
+      "id": "baseline",
+      "phase": "baseline",
+      "action": "Record the experiment-off regtest state and process identity before restart.",
+      "expectation": "observe",
+      "evidence": "pre-restart baseline record"
+    },
+    {
+      "id": "prepare",
+      "phase": "prepare",
+      "action": "Prepare reversible experiment metadata required only for lab reconstruction.",
+      "expectation": "observe",
+      "evidence": "reconstruction-input record"
+    },
+    {
+      "id": "recovery",
+      "phase": "recovery",
+      "action": "Restart the local regtest process and reconstruct the reversible lab state without assigning production recovery authority.",
+      "expectation": "observe",
+      "evidence": "post-restart reconstruction record"
+    },
+    {
+      "id": "rollback",
+      "phase": "rollback",
+      "action": "Disable the isolated experiment and compare the resulting experiment-off observations with the baseline.",
+      "expectation": "unchanged",
+      "evidence": "restart rollback equivalence record"
+    }
+  ],
+  "decision_gates": [
+    "Any post-quantum signature scheme selection requires explicit user review.",
+    "Any hybrid authorization or Bitcoin consensus semantics require explicit user review.",
+    "Any activation, fork deployment, legacy or lost UTXO treatment requires explicit user review.",
+    "Any recovery authority, trust-root, key-custody, or production security semantics require explicit user review."
+  ]
+}
