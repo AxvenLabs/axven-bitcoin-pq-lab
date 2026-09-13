@@ -9,24 +9,53 @@ from __future__ import annotations
 import argparse
 import json
 import pathlib
+import re
 import subprocess
 import tempfile
 
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 DEFAULT_PIN = ROOT / "upstream" / "bitcoin-core.json"
+EXPECTED_REPOSITORY = "https://github.com/bitcoin/bitcoin.git"
+REQUIRED_FIELDS = {"repository", "tag", "tag_object_sha", "commit_sha", "purpose"}
+TAG_RE = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]{0,63}\Z")
 
 
 def load_pin(path: pathlib.Path) -> dict[str, str]:
     data = json.loads(path.read_text(encoding="utf-8"))
-    required = {"repository", "tag", "tag_object_sha", "commit_sha", "purpose"}
-    missing = required - data.keys()
+    if not isinstance(data, dict):
+        raise ValueError("pin must be a JSON object")
+
+    keys = set(data)
+    missing = REQUIRED_FIELDS - keys
+    extra = keys - REQUIRED_FIELDS
     if missing:
         raise ValueError(f"pin is missing fields: {sorted(missing)}")
+    if extra:
+        raise ValueError(f"pin has unexpected fields: {sorted(extra)}")
+
+    for key in REQUIRED_FIELDS:
+        if not isinstance(data[key], str):
+            raise ValueError(f"{key} must be a string")
+
+    if data["repository"] != EXPECTED_REPOSITORY:
+        raise ValueError(
+            f"repository must be the canonical Bitcoin Core upstream: {EXPECTED_REPOSITORY}"
+        )
+
+    tag = data["tag"]
+    if not TAG_RE.fullmatch(tag) or ".." in tag or tag.endswith("."):
+        raise ValueError("tag contains unsafe or unsupported characters")
+
     for key in ("tag_object_sha", "commit_sha"):
         value = data[key]
         if len(value) != 40 or any(ch not in "0123456789abcdef" for ch in value):
             raise ValueError(f"{key} must be a lowercase 40-character git object id")
+
+    purpose = data["purpose"].lower()
+    if "research" not in purpose or "regtest" not in purpose:
+        raise ValueError("purpose must explicitly identify research and regtest use")
+
     return data
 
 
