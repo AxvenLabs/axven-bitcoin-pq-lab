@@ -1,6 +1,5 @@
 import copy
-
-import pytest
+import unittest
 
 from scripts.mldsa_benchmark_report_adapter import adapt_report
 
@@ -54,58 +53,60 @@ def _adapt(raw: dict) -> list[dict]:
     )
 
 
-def test_adapts_all_candidates_and_metrics_to_valid_generic_reports():
-    reports = _adapt(_raw_report())
-    assert len(reports) == 6
-    assert [report["benchmark_name"] for report in reports] == [
-        "ML-DSA-44-verify-wall",
-        "ML-DSA-44-verify-cpu",
-        "ML-DSA-65-verify-wall",
-        "ML-DSA-65-verify-cpu",
-        "ML-DSA-87-verify-wall",
-        "ML-DSA-87-verify-cpu",
-    ]
-    assert all(report["research_only"] is True for report in reports)
-    assert all(report["warmups"] == 0 for report in reports)
+class MldsaBenchmarkReportAdapterTests(unittest.TestCase):
+    def test_adapts_all_candidates_and_metrics_to_valid_generic_reports(self):
+        reports = _adapt(_raw_report())
+        self.assertEqual(len(reports), 6)
+        self.assertEqual(
+            [report["benchmark_name"] for report in reports],
+            [
+                "ML-DSA-44-verify-wall",
+                "ML-DSA-44-verify-cpu",
+                "ML-DSA-65-verify-wall",
+                "ML-DSA-65-verify-cpu",
+                "ML-DSA-87-verify-wall",
+                "ML-DSA-87-verify-cpu",
+            ],
+        )
+        self.assertTrue(all(report["research_only"] is True for report in reports))
+        self.assertTrue(all(report["warmups"] == 0 for report in reports))
 
+    def test_rejects_silent_parameter_set_selection(self):
+        raw = _raw_report()
+        raw["parameter_set_selected"] = True
+        with self.assertRaisesRegex(ValueError, "parameter_set_selected"):
+            _adapt(raw)
 
-def test_rejects_silent_parameter_set_selection():
-    raw = _raw_report()
-    raw["parameter_set_selected"] = True
-    with pytest.raises(ValueError, match="parameter_set_selected"):
+    def test_rejects_or_hybrid_semantics(self):
+        raw = _raw_report()
+        raw["hybrid_research_semantics"] = "classical-or-pq"
+        with self.assertRaisesRegex(ValueError, "hybrid semantics"):
+            _adapt(raw)
+
+    def test_rejects_candidate_set_or_order_drift(self):
+        raw = _raw_report()
+        raw["candidates"] = list(reversed(raw["candidates"]))
+        with self.assertRaisesRegex(ValueError, "candidate set/order"):
+            _adapt(raw)
+
+    def test_rejects_tampered_aggregate_against_raw_samples(self):
+        raw = _raw_report()
+        raw["candidates"][0]["verify_wall_median_ns"] += 1
+        with self.assertRaisesRegex(ValueError, "median does not match raw samples"):
+            _adapt(raw)
+
+    def test_rejects_sample_count_mismatch(self):
+        raw = _raw_report()
+        raw["candidates"][0]["verify_cpu_samples_ns"] = [90, 100]
+        with self.assertRaisesRegex(ValueError, "sample count must equal repetitions"):
+            _adapt(raw)
+
+    def test_input_is_not_mutated(self):
+        raw = _raw_report()
+        original = copy.deepcopy(raw)
         _adapt(raw)
+        self.assertEqual(raw, original)
 
 
-def test_rejects_or_hybrid_semantics():
-    raw = _raw_report()
-    raw["hybrid_research_semantics"] = "classical-or-pq"
-    with pytest.raises(ValueError, match="hybrid semantics"):
-        _adapt(raw)
-
-
-def test_rejects_candidate_set_or_order_drift():
-    raw = _raw_report()
-    raw["candidates"] = list(reversed(raw["candidates"]))
-    with pytest.raises(ValueError, match="candidate set/order"):
-        _adapt(raw)
-
-
-def test_rejects_tampered_aggregate_against_raw_samples():
-    raw = _raw_report()
-    raw["candidates"][0]["verify_wall_median_ns"] += 1
-    with pytest.raises(ValueError, match="median does not match raw samples"):
-        _adapt(raw)
-
-
-def test_rejects_sample_count_mismatch():
-    raw = _raw_report()
-    raw["candidates"][0]["verify_cpu_samples_ns"] = [90, 100]
-    with pytest.raises(ValueError, match="sample count must equal repetitions"):
-        _adapt(raw)
-
-
-def test_input_is_not_mutated():
-    raw = _raw_report()
-    original = copy.deepcopy(raw)
-    _adapt(raw)
-    assert raw == original
+if __name__ == "__main__":
+    unittest.main()
