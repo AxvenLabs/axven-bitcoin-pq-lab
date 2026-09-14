@@ -52,8 +52,11 @@ jobs:
           python -m json.tool /tmp/mldsa-candidates.json >/dev/null
           python - <<'PY'
           import json
+          import math
+          import statistics
+
           report = json.load(open('/tmp/mldsa-candidates.json'))
-          assert report['schema_version'] == 2
+          assert report['schema_version'] == 3
           assert report['research_only'] is True
           assert report['endorsed_by_bitcoin_core'] is False
           assert report['mainnet_intended'] is False
@@ -62,6 +65,8 @@ jobs:
           assert report['bitcoin_core_modified'] is False
           assert report['bitcoin_script_semantics_selected'] is False
           assert report['consensus_change_selected'] is False
+          assert report['raw_sample_evidence'] is True
+          assert report['percentile_method'] == 'nearest-rank'
           assert report['cryptography_version'] == '48.0.0'
           rows = {row['candidate']: row for row in report['candidates']}
           assert set(rows) == {'ML-DSA-44', 'ML-DSA-65', 'ML-DSA-87'}
@@ -72,8 +77,23 @@ jobs:
           }
           for name, row in rows.items():
               assert (row['public_key_bytes'], row['signature_bytes']) == expected[name]
-              assert row['verify_wall_median_ns'] > 0
-              assert row['verify_cpu_median_ns'] > 0
+              wall = row['verify_wall_samples_ns']
+              cpu = row['verify_cpu_samples_ns']
+              assert len(wall) == row['iterations'] == 25
+              assert len(cpu) == row['iterations'] == 25
+              assert all(type(v) is int and v > 0 for v in wall)
+              assert all(type(v) is int and v > 0 for v in cpu)
+              wall_sorted = sorted(wall)
+              cpu_sorted = sorted(cpu)
+              rank = max(1, math.ceil(0.95 * row['iterations']))
+              assert row['verify_wall_median_ns'] == int(statistics.median(wall))
+              assert row['verify_wall_p95_ns'] == wall_sorted[rank - 1]
+              assert row['verify_wall_min_ns'] == min(wall)
+              assert row['verify_wall_max_ns'] == max(wall)
+              assert row['verify_cpu_median_ns'] == int(statistics.median(cpu))
+              assert row['verify_cpu_p95_ns'] == cpu_sorted[rank - 1]
+              assert row['verify_cpu_min_ns'] == min(cpu)
+              assert row['verify_cpu_max_ns'] == max(cpu)
               assert row['python_peak_alloc_bytes'] >= 0
               assert row['process_max_rss_bytes'] > 0
               assert row['correctness_oracle']['valid_signature_accepted'] is True
