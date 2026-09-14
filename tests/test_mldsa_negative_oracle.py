@@ -1,7 +1,12 @@
 import copy
 import unittest
 
-from scripts.mldsa_negative_oracle import build_oracle_report, validate_oracle_report
+try:
+    from scripts.mldsa_negative_oracle import build_oracle_report, validate_oracle_report
+except ModuleNotFoundError as exc:
+    if exc.name == "cryptography":
+        raise unittest.SkipTest("cryptography correctness dependency is exercised in dedicated CI job")
+    raise
 
 
 class MldsaNegativeOracleTests(unittest.TestCase):
