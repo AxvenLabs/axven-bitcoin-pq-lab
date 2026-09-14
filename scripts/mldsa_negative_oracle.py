@@ -53,6 +53,15 @@ def candidate_oracle(name: str) -> dict:
     corrupted_signature = bytearray(signature)
     corrupted_signature[len(corrupted_signature) // 2] ^= 1
 
+    cross_candidate_rejections = {}
+    for other_name in CANDIDATES:
+        if other_name == name:
+            continue
+        _, other_public_key = _keypair(other_name)
+        cross_candidate_rejections[other_name] = _expect_rejected(
+            other_public_key, signature, MESSAGE
+        )
+
     return {
         "candidate": name,
         "valid_signature_accepted": True,
@@ -61,13 +70,14 @@ def candidate_oracle(name: str) -> dict:
         "wrong_public_key_rejected": _expect_rejected(wrong_public_key, signature, MESSAGE),
         "truncated_signature_rejected": _expect_rejected(public_key, signature[:-1], MESSAGE),
         "oversized_signature_rejected": _expect_rejected(public_key, signature + b"\0", MESSAGE),
+        "cross_candidate_signatures_rejected": cross_candidate_rejections,
     }
 
 
 def build_oracle_report() -> dict:
     rows = [candidate_oracle(name) for name in CANDIDATES]
     return {
-        "schema_version": 1,
+        "schema_version": 2,
         "research_only": True,
         "endorsed_by_bitcoin_core": False,
         "mainnet_intended": False,
@@ -86,6 +96,8 @@ def build_oracle_report() -> dict:
 def validate_oracle_report(report: dict) -> None:
     if not isinstance(report, dict):
         raise ValueError("oracle report must be an object")
+    if report.get("schema_version") != 2:
+        raise ValueError("oracle schema_version must be 2")
     protected = {
         "research_only": True,
         "endorsed_by_bitcoin_core": False,
@@ -115,9 +127,20 @@ def validate_oracle_report(report: dict) -> None:
         "oversized_signature_rejected",
     )
     for row in rows:
+        candidate = row["candidate"]
         for check in checks:
             if row.get(check) is not True:
-                raise ValueError(f"correctness oracle check failed: {row['candidate']}:{check}")
+                raise ValueError(f"correctness oracle check failed: {candidate}:{check}")
+
+        expected_other_candidates = [name for name in CANDIDATES if name != candidate]
+        cross = row.get("cross_candidate_signatures_rejected")
+        if not isinstance(cross, dict) or list(cross) != expected_other_candidates:
+            raise ValueError(f"cross-candidate matrix drift: {candidate}")
+        for other_name in expected_other_candidates:
+            if cross.get(other_name) is not True:
+                raise ValueError(
+                    f"cross-candidate rejection failed: {candidate}->{other_name}"
+                )
 
 
 def main() -> int:
