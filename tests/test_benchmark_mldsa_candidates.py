@@ -8,6 +8,11 @@ try:
         benchmark_candidate,
         build_report,
     )
+    from scripts.benchmark_mldsa_scaling import (
+        DEFAULT_BATCH_SIZES,
+        benchmark_candidate_scaling,
+        build_report as build_scaling_report,
+    )
 except ModuleNotFoundError as exc:
     if exc.name == "cryptography":
         raise unittest.SkipTest("cryptography benchmark dependency is exercised in dedicated CI job")
@@ -76,6 +81,49 @@ class MldsaCandidateBenchmarkTests(unittest.TestCase):
             benchmark_candidate("not-a-candidate", 3, b"message")
         with self.assertRaises(ValueError):
             benchmark_candidate("ML-DSA-44", 3, b"")
+
+    def test_scaling_report_preserves_decision_gates_and_all_candidates(self):
+        report = build_scaling_report(repetitions=3, batch_sizes=(1, 2))
+        self.assertTrue(report["research_only"])
+        self.assertFalse(report["mainnet_intended"])
+        self.assertFalse(report["parameter_set_selected"])
+        self.assertFalse(report["deployment_winner_selected"])
+        self.assertFalse(report["bitcoin_core_modified"])
+        self.assertFalse(report["bitcoin_script_semantics_selected"])
+        self.assertFalse(report["output_commitment_semantics_selected"])
+        self.assertFalse(report["consensus_change_selected"])
+        self.assertTrue(report["correctness_oracle_separate"])
+        self.assertEqual([row["candidate"] for row in report["candidates"]], list(CANDIDATES))
+
+    def test_scaling_samples_are_recomputable_and_size_bound(self):
+        row = benchmark_candidate_scaling("ML-DSA-44", repetitions=3, batch_sizes=(1, 2))
+        self.assertEqual(row["public_key_bytes"], EXPECTED_SIZES["ML-DSA-44"]["public_key_bytes"])
+        self.assertEqual(row["signature_bytes"], EXPECTED_SIZES["ML-DSA-44"]["signature_bytes"])
+        self.assertGreater(row["process_max_rss_bytes"], 0)
+        self.assertGreaterEqual(row["process_max_rss_delta_bytes"], 0)
+        self.assertEqual([batch["batch_size"] for batch in row["batches"]], [1, 2])
+        for batch in row["batches"]:
+            wall = batch["wall_total_samples_ns"]
+            cpu = batch["cpu_total_samples_ns"]
+            self.assertEqual(len(wall), 3)
+            self.assertEqual(len(cpu), 3)
+            self.assertTrue(all(type(v) is int and v > 0 for v in wall))
+            self.assertTrue(all(type(v) is int and v > 0 for v in cpu))
+            self.assertEqual(batch["wall_total_median_ns"], int(__import__("statistics").median(wall)))
+            self.assertEqual(batch["cpu_total_median_ns"], int(__import__("statistics").median(cpu)))
+            self.assertGreaterEqual(batch["wall_total_p95_ns"], batch["wall_total_median_ns"])
+            self.assertGreaterEqual(batch["cpu_total_p95_ns"], batch["cpu_total_median_ns"])
+
+    def test_scaling_inputs_fail_closed(self):
+        self.assertEqual(DEFAULT_BATCH_SIZES, (1, 10, 100))
+        for bad in ((), (0,), (2, 1), (1, 1), (True,)):
+            with self.subTest(batch_sizes=bad):
+                with self.assertRaises(ValueError):
+                    build_scaling_report(repetitions=3, batch_sizes=bad)
+        with self.assertRaises(ValueError):
+            benchmark_candidate_scaling("ML-DSA-44", repetitions=2)
+        with self.assertRaises(ValueError):
+            benchmark_candidate_scaling("not-a-candidate", repetitions=3)
 
 
 if __name__ == "__main__":
