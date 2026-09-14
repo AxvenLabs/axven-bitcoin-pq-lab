@@ -12,7 +12,6 @@ import argparse
 import json
 
 from scripts.benchmark_environment import collect_environment
-from scripts.benchmark_mldsa_candidates import build_report
 from scripts.benchmark_report import validate_report
 
 EXPECTED_CANDIDATES = ("ML-DSA-44", "ML-DSA-65", "ML-DSA-87")
@@ -94,6 +93,10 @@ def adapt_report(
 
 
 def main() -> int:
+    # Import the optional ML-DSA backend only when the executable benchmark path
+    # is used. The pure adapter contract stays testable without that dependency.
+    from scripts.benchmark_mldsa_candidates import build_report
+
     parser = argparse.ArgumentParser()
     parser.add_argument("--iterations", type=int, default=25)
     parser.add_argument("--source-identity", required=True)
