@@ -12,9 +12,17 @@ from __future__ import annotations
 import json
 
 from scripts.benchmark_auth_material_size import structural_case
-from scripts.benchmark_mldsa_candidates import EXPECTED_SIZES
 
 EXPECTED_ORDER = ["ML-DSA-44", "ML-DSA-65", "ML-DSA-87"]
+# FIPS 204 public-key/signature sizes are repeated here intentionally so this
+# structural adapter remains independent of the optional cryptographic backend.
+# The dedicated ML-DSA benchmark CI independently validates the same size
+# contract against real cryptography==48.0.0 keys/signatures.
+EXPECTED_SIZES = {
+    "ML-DSA-44": {"public_key_bytes": 1312, "signature_bytes": 2420},
+    "ML-DSA-65": {"public_key_bytes": 1952, "signature_bytes": 3309},
+    "ML-DSA-87": {"public_key_bytes": 2592, "signature_bytes": 4627},
+}
 
 
 def build_report() -> dict:
