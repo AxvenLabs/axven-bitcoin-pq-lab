@@ -3,7 +3,11 @@ import unittest
 try:
     from scripts.run_regtest_mldsa_hybrid_demo import run_demo
 except ImportError as exc:
-    if exc.name == "cryptography.hazmat.primitives.asymmetric.mldsa":
+    # The generic deterministic-model CI job intentionally does not install the
+    # pinned ML-DSA backend. Keep this optional lab test isolated there, while
+    # still surfacing unrelated import failures. The dedicated ML-DSA job
+    # installs the backend and therefore executes these tests rather than skips.
+    if exc.name and exc.name.startswith("cryptography"):
         run_demo = None
     else:
         raise
