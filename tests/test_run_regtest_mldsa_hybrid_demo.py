@@ -1,6 +1,12 @@
 import unittest
 
-from scripts.run_regtest_mldsa_hybrid_demo import run_demo
+try:
+    from scripts.run_regtest_mldsa_hybrid_demo import run_demo
+except ImportError as exc:
+    if exc.name == "cryptography.hazmat.primitives.asymmetric.mldsa":
+        run_demo = None
+    else:
+        raise
 
 
 TXID = "11" * 32
@@ -13,6 +19,7 @@ EXPECTED_SIGNATURE_BYTES = {
 }
 
 
+@unittest.skipUnless(run_demo is not None, "requires pinned ML-DSA benchmark backend")
 class RegtestMldsaHybridDemoTests(unittest.TestCase):
     def test_all_named_candidates_run_without_selection(self):
         public_key_hashes = set()
