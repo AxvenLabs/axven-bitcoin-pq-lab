@@ -9,10 +9,18 @@ from __future__ import annotations
 import copy
 import unittest
 
+try:
+    from cryptography.hazmat.primitives.asymmetric import mldsa as _mldsa  # noqa: F401
+except (ImportError, ModuleNotFoundError):
+    _MLDSA_AVAILABLE = False
+else:
+    _MLDSA_AVAILABLE = True
+
 from scripts.run_regtest_mldsa_hybrid_demo import build_demo
 from scripts.validate_regtest_mldsa_hybrid_demo import validate_demo_report
 
 
+@unittest.skipUnless(_MLDSA_AVAILABLE, "requires cryptography ML-DSA backend")
 class RegtestDemoEvidenceTamperTests(unittest.TestCase):
     def setUp(self) -> None:
         self.report = build_demo(
