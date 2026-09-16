@@ -1,10 +1,13 @@
 import copy,unittest
-from scripts.regtest_chain_evidence import build_chain_evidence
-from scripts.regtest_mldsa_composition import build_composition
-from scripts.regtest_benchmark_evidence import build_benchmark_evidence
-from scripts.regtest_provenance_evidence import build_provenance,EXPECTED_COMMIT,EXPECTED_TAG,EXPECTED_TAG_OBJECT
-from scripts.regtest_e2e_evidence import build_e2e_evidence
-from scripts.validate_regtest_e2e_evidence import validate_e2e_evidence
+try:
+ from scripts.regtest_chain_evidence import build_chain_evidence
+ from scripts.regtest_mldsa_composition import build_composition
+ from scripts.regtest_benchmark_evidence import build_benchmark_evidence
+ from scripts.regtest_provenance_evidence import build_provenance,EXPECTED_COMMIT,EXPECTED_TAG,EXPECTED_TAG_OBJECT
+ from scripts.regtest_e2e_evidence import build_e2e_evidence
+ from scripts.validate_regtest_e2e_evidence import validate_e2e_evidence
+except (ImportError,ModuleNotFoundError):
+ raise unittest.SkipTest("requires pinned ML-DSA backend")
 class T(unittest.TestCase):
  @classmethod
  def setUpClass(cls):
