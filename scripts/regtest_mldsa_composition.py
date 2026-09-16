@@ -32,9 +32,10 @@ def build_composition(*, txid: str, vout: int, message_digest: str) -> dict:
             raise RuntimeError("negative Classical AND PQ case was authorized")
         if not positive["pq_altered_transcript_rejected"]:
             raise RuntimeError("altered transcript was not rejected")
+        # ML-DSA signatures are randomized. Keep per-run demo digests out of the
+        # canonical composition so identical research inputs produce identical
+        # composition evidence without pretending signature bytes are deterministic.
         candidates[candidate] = {
-            "positive_demo_sha256": positive["demo_sha256"],
-            "negative_demo_sha256": negative["demo_sha256"],
             "public_key_sha256": positive["public_key_sha256"],
             "signature_bytes": positive["signature_bytes"],
             "valid_signature_accepted": positive["pq_valid_signature_accepted"],
