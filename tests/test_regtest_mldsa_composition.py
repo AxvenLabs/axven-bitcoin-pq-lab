@@ -1,8 +1,15 @@
 import unittest
 
-from scripts.regtest_mldsa_composition import build_composition
+try:
+    from scripts.regtest_mldsa_composition import build_composition
+except ImportError as exc:
+    build_composition = None
+    MLDSA_IMPORT_ERROR = exc
+else:
+    MLDSA_IMPORT_ERROR = None
 
 
+@unittest.skipIf(build_composition is None, "pinned ML-DSA backend is not installed in this job")
 class RegtestMldsaCompositionTests(unittest.TestCase):
     def test_all_candidates_and_truth_table_are_recorded_without_selection(self):
         report = build_composition(txid="ab" * 32, vout=2, message_digest="cd" * 32)
