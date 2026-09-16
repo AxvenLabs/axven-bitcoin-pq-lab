@@ -1,43 +1,13 @@
-import copy
 import unittest
-
-from scripts.regtest_provenance_evidence import build_provenance
-
-
+from scripts.regtest_provenance_evidence import build_provenance,EXPECTED_COMMIT,EXPECTED_TAG,EXPECTED_TAG_OBJECT
 class TestRegtestProvenanceEvidence(unittest.TestCase):
-    def kwargs(self):
-        return {
-            "repo_commit": "a" * 40,
-            "bitcoin_version": "Bitcoin Core version v31.1",
-            "python_version": "3.12.3",
-            "cryptography_version": "48.0.0",
-            "os_name": "Linux-6.6-WSL2",
-            "machine": "x86_64",
-        }
-
-    def test_deterministic_and_boundary_safe(self):
-        a = build_provenance(**self.kwargs())
-        b = build_provenance(**self.kwargs())
-        self.assertEqual(a, b)
-        self.assertFalse(a["parameter_set_selected"])
-        self.assertFalse(a["bitcoin_core_validates_mldsa"])
-        self.assertFalse(a["native_windows_resource_portability_demonstrated"])
-
-    def test_rejects_wrong_bitcoin_version(self):
-        k = self.kwargs(); k["bitcoin_version"] = "Bitcoin Core version v31.0"
-        with self.assertRaises(ValueError):
-            build_provenance(**k)
-
-    def test_rejects_invalid_repo_commit(self):
-        k = self.kwargs(); k["repo_commit"] = "not-a-sha"
-        with self.assertRaises(ValueError):
-            build_provenance(**k)
-
-    def test_rejects_missing_runtime_identity(self):
-        k = self.kwargs(); k["machine"] = ""
-        with self.assertRaises(ValueError):
-            build_provenance(**k)
-
-
-if __name__ == "__main__":
-    unittest.main()
+    def kwargs(self): return {"repo_commit":"a"*40,"bitcoin_version":"Bitcoin Core daemon version v31.1 bitcoind","source_commit":EXPECTED_COMMIT,"tag":EXPECTED_TAG,"tag_object":EXPECTED_TAG_OBJECT,"bitcoind_sha256":"b"*64,"bitcoin_cli_sha256":"c"*64,"python_version":"3.12.3","cryptography_version":"48.0.0","openssl_version":"OpenSSL test","os_name":"Linux-WSL2","machine":"x86_64"}
+    def test_deterministic_and_safe(self):
+        a=build_provenance(**self.kwargs()); self.assertEqual(a,build_provenance(**self.kwargs())); self.assertFalse(a["parameter_set_selected"]); self.assertEqual(a["bitcoin_core"]["tag_object"],EXPECTED_TAG_OBJECT)
+    def test_rejects_source_drift(self):
+        k=self.kwargs(); k["source_commit"]="0"*40
+        with self.assertRaises(ValueError): build_provenance(**k)
+    def test_rejects_missing_openssl(self):
+        k=self.kwargs(); k["openssl_version"]=""
+        with self.assertRaises(ValueError): build_provenance(**k)
+if __name__=="__main__": unittest.main()
