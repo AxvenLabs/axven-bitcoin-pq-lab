@@ -45,7 +45,7 @@ jobs:
       - name: Install pinned ML-DSA benchmark backend
         run: python -m pip install --disable-pip-version-check cryptography==48.0.0
       - name: Run ML-DSA candidate regression tests
-        run: python -m unittest tests.test_benchmark_mldsa_candidates tests.test_mldsa_negative_oracle tests.test_regtest_mldsa_composition -v
+        run: python -m unittest tests.test_benchmark_mldsa_candidates tests.test_mldsa_negative_oracle tests.test_regtest_mldsa_composition tests.test_regtest_benchmark_evidence -v
       - name: Run named ML-DSA candidate comparison
         run: |
           python -m scripts.benchmark_mldsa_candidates --iterations 25 | tee /tmp/mldsa-candidates.json
@@ -70,35 +70,28 @@ jobs:
           assert report['cryptography_version'] == '48.0.0'
           rows = {row['candidate']: row for row in report['candidates']}
           assert set(rows) == {'ML-DSA-44', 'ML-DSA-65', 'ML-DSA-87'}
-          expected = {
-              'ML-DSA-44': (1312, 2420),
-              'ML-DSA-65': (1952, 3309),
-              'ML-DSA-87': (2592, 4627),
-          }
+          expected = {'ML-DSA-44': (1312, 2420), 'ML-DSA-65': (1952, 3309), 'ML-DSA-87': (2592, 4627)}
           for name, row in rows.items():
               assert (row['public_key_bytes'], row['signature_bytes']) == expected[name]
-              wall = row['verify_wall_samples_ns']
-              cpu = row['verify_cpu_samples_ns']
+              wall = row['verify_wall_samples_ns']; cpu = row['verify_cpu_samples_ns']
               assert len(wall) == row['iterations'] == 25
               assert len(cpu) == row['iterations'] == 25
               assert all(type(v) is int and v > 0 for v in wall)
               assert all(type(v) is int and v > 0 for v in cpu)
-              wall_sorted = sorted(wall)
-              cpu_sorted = sorted(cpu)
               rank = max(1, math.ceil(0.95 * row['iterations']))
               assert row['verify_wall_median_ns'] == int(statistics.median(wall))
-              assert row['verify_wall_p95_ns'] == wall_sorted[rank - 1]
-              assert row['verify_wall_min_ns'] == min(wall)
-              assert row['verify_wall_max_ns'] == max(wall)
+              assert row['verify_wall_p95_ns'] == sorted(wall)[rank - 1]
               assert row['verify_cpu_median_ns'] == int(statistics.median(cpu))
-              assert row['verify_cpu_p95_ns'] == cpu_sorted[rank - 1]
-              assert row['verify_cpu_min_ns'] == min(cpu)
-              assert row['verify_cpu_max_ns'] == max(cpu)
+              assert row['verify_cpu_p95_ns'] == sorted(cpu)[rank - 1]
               assert row['python_peak_alloc_bytes'] >= 0
               assert row['process_max_rss_bytes'] > 0
               assert row['correctness_oracle']['valid_signature_accepted'] is True
               assert row['correctness_oracle']['altered_message_rejected'] is True
           PY
+      - name: Emit canonical raw benchmark evidence
+        run: |
+          python -m scripts.regtest_benchmark_evidence --iterations 25 | tee /tmp/regtest-benchmark-evidence.json
+          python -m json.tool /tmp/regtest-benchmark-evidence.json >/dev/null
 
   vanilla-regtest:
     runs-on: ubuntu-latest
@@ -119,11 +112,7 @@ jobs:
           test "$(git -C /tmp/bitcoin-core rev-parse HEAD)" = "$(python -c 'import json; print(json.load(open("upstream/bitcoin-core.json"))["commit_sha"])')"
       - name: Build vanilla Bitcoin Core
         run: |
-          cmake -S /tmp/bitcoin-core -B /tmp/bitcoin-core/build \
-            -DBUILD_GUI=OFF \
-            -DENABLE_IPC=OFF \
-            -DBUILD_BENCH=OFF \
-            -DBUILD_TESTS=OFF
+          cmake -S /tmp/bitcoin-core -B /tmp/bitcoin-core/build -DBUILD_GUI=OFF -DENABLE_IPC=OFF -DBUILD_BENCH=OFF -DBUILD_TESTS=OFF
           cmake --build /tmp/bitcoin-core/build -j2
       - name: Run isolated vanilla regtest baseline
         run: bash scripts/run_vanilla_regtest_baseline.sh /tmp/bitcoin-core/build/bin | tee /tmp/vanilla-regtest-baseline.json
