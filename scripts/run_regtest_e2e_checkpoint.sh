@@ -5,7 +5,9 @@ set -euo pipefail
 # Runs an unmodified Bitcoin Core regtest node and emits observed chain evidence.
 # ML-DSA is an off-consensus laboratory layer; Bitcoin Core does not validate it.
 BIN_DIR="${1:-}"
-[[ -n "${BIN_DIR}" ]] || { echo "usage: $0 /path/to/bitcoin-core/build/bin" >&2; exit 2; }
+[[ -n "${BIN_DIR}" ]] || { echo "usage: $0 /path/to/bitcoin-core/build/bin [benchmark-iterations]" >&2; exit 2; }
+BENCHMARK_ITERATIONS="${2:-25}"
+[[ "${BENCHMARK_ITERATIONS}" =~ ^[0-9]+$ && "${BENCHMARK_ITERATIONS}" -ge 3 ]] || { echo "benchmark iterations must be an integer >= 3" >&2; exit 2; }
 BITCOIND="${BIN_DIR}/bitcoind"; BITCOIN_CLI="${BIN_DIR}/bitcoin-cli"
 [[ -x "${BITCOIND}" && -x "${BITCOIN_CLI}" ]] || { echo "missing Bitcoin Core executables" >&2; exit 2; }
 
@@ -34,3 +36,9 @@ python3 -m scripts.regtest_chain_evidence \
 
 python3 -m scripts.regtest_mldsa_composition \
   --txid "${TXID}" --vout "${VOUT}" --message-digest "${MESSAGE_DIGEST}"
+
+# Descriptive raw benchmark/resource evidence for all three candidates. This is
+# deliberately separate from the correctness oracle and does not rank/select a
+# deployment parameter set. Linux/WSL is the demonstrated resource environment;
+# native Windows `resource` portability remains open.
+python3 -m scripts.regtest_benchmark_evidence --iterations "${BENCHMARK_ITERATIONS}"
