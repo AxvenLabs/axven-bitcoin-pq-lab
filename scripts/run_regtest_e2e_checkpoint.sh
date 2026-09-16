@@ -3,7 +3,7 @@ set -euo pipefail
 
 # Research only. Not endorsed by Bitcoin Core. Not intended for mainnet.
 # Runs an unmodified Bitcoin Core regtest node and emits observed chain evidence.
-# ML-DSA remains an off-consensus laboratory layer; Bitcoin Core does not validate it.
+# ML-DSA is an off-consensus laboratory layer; Bitcoin Core does not validate it.
 BIN_DIR="${1:-}"
 [[ -n "${BIN_DIR}" ]] || { echo "usage: $0 /path/to/bitcoin-core/build/bin" >&2; exit 2; }
 BITCOIND="${BIN_DIR}/bitcoind"; BITCOIN_CLI="${BIN_DIR}/bitcoin-cli"
@@ -25,8 +25,12 @@ BLOCK_HEIGHT="$("${CLI[@]}" getblockheader "${BLOCK_HASH}" | python3 -c 'import 
 TX="$("${CLI[@]}" getrawtransaction "${TXID}" true "${BLOCK_HASH}")"
 read -r VOUT CONFIRMATIONS AMOUNT < <("${CLI[@]}" -rpcwallet=e2e listunspent 1 9999999 "[\"${DEST}\"]" | python3 -c 'import json,sys; t=sys.argv[1]; r=[x for x in json.load(sys.stdin) if x["txid"]==t]; assert len(r)==1; x=r[0]; print(x["vout"],x["confirmations"],x["amount"])' "${TXID}")
 read -r TX_HEX TX_SIZE TX_WEIGHT TX_VSIZE < <(printf '%s' "${TX}" | python3 -c 'import json,sys; x=json.load(sys.stdin); print(x["hex"],x["size"],x["weight"],x["vsize"])')
+MESSAGE_DIGEST="$(printf '%s:%s' "${TXID}" "${VOUT}" | sha256sum | awk '{print $1}')"
 
 python3 -m scripts.regtest_chain_evidence \
   --txid "${TXID}" --vout "${VOUT}" --amount-btc "${AMOUNT}" --confirmations "${CONFIRMATIONS}" \
   --block-hash "${BLOCK_HASH}" --block-height "${BLOCK_HEIGHT}" --tx-hex "${TX_HEX}" \
   --tx-size "${TX_SIZE}" --tx-weight "${TX_WEIGHT}" --tx-vsize "${TX_VSIZE}"
+
+python3 -m scripts.regtest_mldsa_composition \
+  --txid "${TXID}" --vout "${VOUT}" --message-digest "${MESSAGE_DIGEST}"
