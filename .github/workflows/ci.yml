@@ -45,7 +45,7 @@ jobs:
       - name: Install pinned ML-DSA benchmark backend
         run: python -m pip install --disable-pip-version-check cryptography==48.0.0
       - name: Run ML-DSA candidate regression tests
-        run: python -m unittest tests.test_benchmark_mldsa_candidates tests.test_mldsa_negative_oracle tests.test_regtest_mldsa_composition -v
+        run: python -m unittest tests.test_benchmark_mldsa_candidates tests.test_mldsa_negative_oracle tests.test_regtest_mldsa_composition tests.test_regtest_benchmark_evidence -v
       - name: Run named ML-DSA candidate comparison
         run: |
           python -m scripts.benchmark_mldsa_candidates --iterations 25 | tee /tmp/mldsa-candidates.json
@@ -99,6 +99,10 @@ jobs:
               assert row['correctness_oracle']['valid_signature_accepted'] is True
               assert row['correctness_oracle']['altered_message_rejected'] is True
           PY
+      - name: Emit canonical raw benchmark evidence
+        run: |
+          python -m scripts.regtest_benchmark_evidence --iterations 25 | tee /tmp/regtest-benchmark-evidence.json
+          python -m json.tool /tmp/regtest-benchmark-evidence.json >/dev/null
 
   vanilla-regtest:
     runs-on: ubuntu-latest
