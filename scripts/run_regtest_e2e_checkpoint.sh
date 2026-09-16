@@ -34,19 +34,24 @@ python3 -m scripts.regtest_chain_evidence \
   --txid "${TXID}" --vout "${VOUT}" --amount-btc "${AMOUNT}" --confirmations "${CONFIRMATIONS}" \
   --block-hash "${BLOCK_HASH}" --block-height "${BLOCK_HEIGHT}" --tx-hex "${TX_HEX}" \
   --tx-size "${TX_SIZE}" --tx-weight "${TX_WEIGHT}" --tx-vsize "${TX_VSIZE}" > "${EVIDENCE_DIR}/chain.json"
-
-python3 -m scripts.regtest_mldsa_composition \
-  --txid "${TXID}" --vout "${VOUT}" --message-digest "${MESSAGE_DIGEST}" > "${EVIDENCE_DIR}/composition.json"
-
-# Descriptive raw benchmark/resource evidence for all three candidates. This is
-# deliberately separate from the correctness oracle and does not rank/select a
-# deployment parameter set. Linux/WSL is the demonstrated resource environment;
-# native Windows `resource` portability remains open.
+python3 -m scripts.regtest_mldsa_composition --txid "${TXID}" --vout "${VOUT}" --message-digest "${MESSAGE_DIGEST}" > "${EVIDENCE_DIR}/composition.json"
 python3 -m scripts.regtest_benchmark_evidence --iterations "${BENCHMARK_ITERATIONS}" > "${EVIDENCE_DIR}/benchmark.json"
 
-# Emit one canonical top-level envelope that binds the independently generated
-# chain, correctness/composition, and benchmark evidence digests.
+REPO_COMMIT="$(git rev-parse HEAD)"
+BITCOIN_VERSION="$("${BITCOIND}" --version | head -n1)"
+PYTHON_VERSION="$(python3 -c 'import platform; print(platform.python_version())')"
+CRYPTOGRAPHY_VERSION="$(python3 -c 'import cryptography; print(cryptography.__version__)')"
+OS_NAME="$(python3 -c 'import platform; print(platform.platform())')"
+MACHINE="$(python3 -c 'import platform; print(platform.machine())')"
+python3 -m scripts.regtest_provenance_evidence \
+  --repo-commit "${REPO_COMMIT}" --bitcoin-version "${BITCOIN_VERSION}" \
+  --python-version "${PYTHON_VERSION}" --cryptography-version "${CRYPTOGRAPHY_VERSION}" \
+  --os-name "${OS_NAME}" --machine "${MACHINE}" > "${EVIDENCE_DIR}/provenance.json"
+
+# The top-level evidence remains composed from independently generated chain,
+# correctness/composition and benchmark evidence. Provenance is emitted beside
+# it for this reversible checkpoint and will be bound into the envelope only
+# after its independent validator is added.
 python3 -m scripts.regtest_e2e_evidence \
-  --chain "${EVIDENCE_DIR}/chain.json" \
-  --composition "${EVIDENCE_DIR}/composition.json" \
+  --chain "${EVIDENCE_DIR}/chain.json" --composition "${EVIDENCE_DIR}/composition.json" \
   --benchmark "${EVIDENCE_DIR}/benchmark.json"
