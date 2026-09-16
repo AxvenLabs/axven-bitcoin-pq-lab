@@ -12,7 +12,8 @@ BITCOIND="${BIN_DIR}/bitcoind"; BITCOIN_CLI="${BIN_DIR}/bitcoin-cli"
 [[ -x "${BITCOIND}" && -x "${BITCOIN_CLI}" ]] || { echo "missing Bitcoin Core executables" >&2; exit 2; }
 
 DATADIR="$(mktemp -d -t axven-btc-pq-e2e-XXXXXX)"
-cleanup() { "${BITCOIN_CLI}" -regtest -datadir="${DATADIR}" stop >/dev/null 2>&1 || true; rm -rf "${DATADIR}"; }
+EVIDENCE_DIR="$(mktemp -d -t axven-btc-pq-evidence-XXXXXX)"
+cleanup() { "${BITCOIN_CLI}" -regtest -datadir="${DATADIR}" stop >/dev/null 2>&1 || true; rm -rf "${DATADIR}" "${EVIDENCE_DIR}"; }
 trap cleanup EXIT
 "${BITCOIND}" -regtest -datadir="${DATADIR}" -daemonwait -server -listen=0 -dnsseed=0 -fixedseeds=0 -fallbackfee=0.0002 >/dev/null
 CLI=("${BITCOIN_CLI}" -regtest -datadir="${DATADIR}" -rpcwait)
@@ -32,13 +33,20 @@ MESSAGE_DIGEST="$(printf '%s:%s' "${TXID}" "${VOUT}" | sha256sum | awk '{print $
 python3 -m scripts.regtest_chain_evidence \
   --txid "${TXID}" --vout "${VOUT}" --amount-btc "${AMOUNT}" --confirmations "${CONFIRMATIONS}" \
   --block-hash "${BLOCK_HASH}" --block-height "${BLOCK_HEIGHT}" --tx-hex "${TX_HEX}" \
-  --tx-size "${TX_SIZE}" --tx-weight "${TX_WEIGHT}" --tx-vsize "${TX_VSIZE}"
+  --tx-size "${TX_SIZE}" --tx-weight "${TX_WEIGHT}" --tx-vsize "${TX_VSIZE}" > "${EVIDENCE_DIR}/chain.json"
 
 python3 -m scripts.regtest_mldsa_composition \
-  --txid "${TXID}" --vout "${VOUT}" --message-digest "${MESSAGE_DIGEST}"
+  --txid "${TXID}" --vout "${VOUT}" --message-digest "${MESSAGE_DIGEST}" > "${EVIDENCE_DIR}/composition.json"
 
 # Descriptive raw benchmark/resource evidence for all three candidates. This is
 # deliberately separate from the correctness oracle and does not rank/select a
 # deployment parameter set. Linux/WSL is the demonstrated resource environment;
 # native Windows `resource` portability remains open.
-python3 -m scripts.regtest_benchmark_evidence --iterations "${BENCHMARK_ITERATIONS}"
+python3 -m scripts.regtest_benchmark_evidence --iterations "${BENCHMARK_ITERATIONS}" > "${EVIDENCE_DIR}/benchmark.json"
+
+# Emit one canonical top-level envelope that binds the independently generated
+# chain, correctness/composition, and benchmark evidence digests.
+python3 -m scripts.regtest_e2e_evidence \
+  --chain "${EVIDENCE_DIR}/chain.json" \
+  --composition "${EVIDENCE_DIR}/composition.json" \
+  --benchmark "${EVIDENCE_DIR}/benchmark.json"
