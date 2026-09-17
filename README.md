@@ -31,7 +31,11 @@ Phase 2 has reached an evidence-complete research checkpoint. On evaluated main 
 
 The off-consensus experiment records candidate-neutral ML-DSA-44/65/87 measurements and tested Classical AND PQ laboratory semantics against real Bitcoin Core v31.1 regtest transaction evidence. Bitcoin Core, consensus and Script remain unmodified by the experiment; Bitcoin Core does not validate ML-DSA. No production ML-DSA parameter set, Script/output/witness semantics, activation/fork deployment, recovery authority, trust root, key custody or production authorization semantics are selected.
 
-See [`docs/PHASE2_FINAL_RESULTS.md`](docs/PHASE2_FINAL_RESULTS.md) for the final evidence, provenance, benchmark scope, validation result and limitations. Historical checkpoint documents remain unchanged as an auditable research trail.
+See [`docs/PHASE2_FINAL_RESULTS.md`](docs/PHASE2_FINAL_RESULTS.md) for the final Phase 2 evidence, provenance, benchmark scope, validation result and limitations.
+
+Phase 3 now has a live deterministic replay evidence checkpoint. A fresh Bitcoin Core v31.1 regtest evidence envelope was independently validated, replayed twice to byte-identical receipts, accepted by an independent replay-receipt validator, and a controlled receipt-digest tamper was rejected fail-closed. This remains research-only and off-consensus; it does not add or select Bitcoin Script, opcode, output/witness, activation, mainnet, recovery, trust-root, custody, production authorization, or production ML-DSA semantics.
+
+See [`docs/PHASE3_LIVE_REPLAY_RESULTS.md`](docs/PHASE3_LIVE_REPLAY_RESULTS.md) for the exact tested checkpoint, provenance, fresh evidence digests, deterministic replay result, independent receipt validation, controlled tamper rejection, and limitations. Historical checkpoint documents remain unchanged as an auditable research trail.
 
 ## Project structure
 
