@@ -7,6 +7,8 @@ import hashlib
 import json
 from pathlib import Path
 
+from scripts.validate_regtest_e2e_evidence import validate_e2e_evidence
+
 EXPECTED_KEYS = {
     "schema_version",
     "input_e2e_sha256",
@@ -26,8 +28,12 @@ def _canonical_digest(value: object) -> str:
     return hashlib.sha256(encoded).hexdigest()
 
 
-def validate_replay_receipt(receipt: dict) -> str:
-    """Fail closed unless a receipt is canonical, complete, and research-only."""
+def validate_replay_receipt(receipt: dict, evidence: dict | None = None) -> str:
+    """Fail closed unless a receipt is canonical, complete, and research-only.
+
+    When evidence is supplied, independently validate it and require the receipt's
+    input digest and validator schema version to bind to that exact evidence.
+    """
     if not isinstance(receipt, dict) or set(receipt) != EXPECTED_KEYS:
         raise ValueError("unexpected replay receipt fields")
     if receipt["schema_version"] != 1:
@@ -62,15 +68,33 @@ def validate_replay_receipt(receipt: dict) -> str:
     actual = _canonical_digest(unsigned)
     if claimed != actual:
         raise ValueError("replay receipt digest mismatch")
+
+    if evidence is not None:
+        if not isinstance(evidence, dict):
+            raise ValueError("invalid replay evidence")
+        evidence_digest = validate_e2e_evidence(evidence)
+        if digest != evidence_digest:
+            raise ValueError("replay receipt is not bound to supplied evidence")
+        if receipt["validator_schema_version"] != evidence.get("schema_version"):
+            raise ValueError("replay receipt validator schema mismatch")
+
     return actual
 
 
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("receipt", type=Path)
+    parser.add_argument(
+        "--evidence",
+        type=Path,
+        help="independently validate and bind the receipt to this E2E evidence",
+    )
     args = parser.parse_args()
     receipt = json.loads(args.receipt.read_text(encoding="utf-8"))
-    print(validate_replay_receipt(receipt))
+    evidence = None
+    if args.evidence is not None:
+        evidence = json.loads(args.evidence.read_text(encoding="utf-8"))
+    print(validate_replay_receipt(receipt, evidence=evidence))
     return 0
 
 
