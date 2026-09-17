@@ -13,7 +13,7 @@ try:
     )
     from scripts.regtest_e2e_evidence import build_e2e_evidence
     from scripts.replay_regtest_e2e_evidence import replay_e2e_evidence
-    from scripts.validate_replay_receipt import validate_replay_receipt
+    from scripts.validate_replay_receipt import _canonical_digest, validate_replay_receipt
 except (ImportError, ModuleNotFoundError):
     raise unittest.SkipTest("requires pinned ML-DSA backend")
 
@@ -49,13 +49,29 @@ class T(unittest.TestCase):
             os_name="Linux",
             machine="x86_64",
         )
-        cls.receipt = replay_e2e_evidence(build_e2e_evidence(chain, composition, benchmark, provenance))
+        cls.evidence = build_e2e_evidence(chain, composition, benchmark, provenance)
+        cls.receipt = replay_e2e_evidence(cls.evidence)
 
     def test_intact_receipt_validates_deterministically(self):
         first = validate_replay_receipt(self.receipt)
         second = validate_replay_receipt(copy.deepcopy(self.receipt))
         self.assertEqual(first, second)
         self.assertEqual(first, self.receipt["replay_receipt_sha256"])
+
+    def test_intact_receipt_binds_to_supplied_evidence(self):
+        self.assertEqual(
+            validate_replay_receipt(self.receipt, evidence=self.evidence),
+            self.receipt["replay_receipt_sha256"],
+        )
+
+    def test_rehashed_forged_input_digest_fails_against_supplied_evidence(self):
+        tampered = copy.deepcopy(self.receipt)
+        tampered["input_e2e_sha256"] = "0" * 64
+        unsigned = dict(tampered)
+        del unsigned["replay_receipt_sha256"]
+        tampered["replay_receipt_sha256"] = _canonical_digest(unsigned)
+        with self.assertRaisesRegex(ValueError, "not bound to supplied evidence"):
+            validate_replay_receipt(tampered, evidence=self.evidence)
 
     def test_digest_tamper_fails_closed(self):
         tampered = copy.deepcopy(self.receipt)
