@@ -13,10 +13,10 @@ try:
     from cryptography.hazmat.primitives.asymmetric import mldsa as _mldsa  # noqa: F401
 except (ImportError, ModuleNotFoundError):
     _MLDSA_AVAILABLE = False
-    build_demo = None
+    run_demo = None
 else:
     _MLDSA_AVAILABLE = True
-    from scripts.run_regtest_mldsa_hybrid_demo import build_demo
+    from scripts.run_regtest_mldsa_hybrid_demo import run_demo
 
 from scripts.validate_regtest_mldsa_hybrid_demo import validate_demo_report
 
@@ -24,8 +24,8 @@ from scripts.validate_regtest_mldsa_hybrid_demo import validate_demo_report
 @unittest.skipUnless(_MLDSA_AVAILABLE, "requires cryptography ML-DSA backend")
 class RegtestDemoEvidenceTamperTests(unittest.TestCase):
     def setUp(self) -> None:
-        assert build_demo is not None
-        self.report = build_demo(
+        assert run_demo is not None
+        self.report = run_demo(
             candidate="ML-DSA-44",
             txid="b731e7c37947aa0155fddd8889330749db9d6fb0056bc3ba3b5701ea3be6e467",
             vout=0,
