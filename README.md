@@ -27,9 +27,11 @@ The lab studies how a legacy authorization path could migrate through an explici
 
 ## Status
 
-The scheme-neutral authorization model, deterministic migration/replay tests, canonical test-vector generator, and a non-cryptographic benchmark harness are now implemented. See [`docs/TEST_VECTORS.md`](docs/TEST_VECTORS.md).
+Phase 2 reached an evidence-complete research checkpoint on evaluated main commit `901a1fbe7b98cf41d16dd67a3218fc8d54374f5d`. The final WSL/Linux suite completed **239/239 tests successfully**, and the independent E2E validator reproduced canonical evidence SHA-256 `d3fdb272903fb6112db18ec6ad044fbe268937a3302da626914e540cdf863540` exactly.
 
-Cryptographic scheme selection and Bitcoin consensus/activation choices remain intentionally **undecided**. No benchmark currently claims Bitcoin Script, Schnorr/ECDSA, or post-quantum signature performance.
+The off-consensus experiment records candidate-neutral ML-DSA-44/65/87 measurements and tested Classical AND PQ laboratory semantics against real Bitcoin Core v31.1 regtest transaction evidence. Bitcoin Core, consensus and Script remain unmodified by the experiment; Bitcoin Core does **not** validate ML-DSA. No production ML-DSA parameter set, Script/output/witness semantics, mainnet activation, trust root, recovery authority or key-custody policy has been selected.
+
+See [`docs/PHASE2_FINAL_RESULTS.md`](docs/PHASE2_FINAL_RESULTS.md) for the final evidence, provenance, benchmark scope and publication limitations. Earlier checkpoint documents remain historical records of the incremental research process.
 
 ## Project structure
 
