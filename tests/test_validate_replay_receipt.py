@@ -75,6 +75,17 @@ class T(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "duplicate replay receipt field"):
                 load_replay_receipt(path)
 
+    def test_non_object_json_roots_fail_closed(self):
+        cases = ([], [self.receipt], None, True, 1, "receipt")
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "receipt.json"
+            for value in cases:
+                with self.subTest(value=value):
+                    path.write_text(json.dumps(value), encoding="utf-8")
+                    loaded = load_replay_receipt(path)
+                    with self.assertRaisesRegex(ValueError, "unexpected replay receipt fields"):
+                        validate_replay_receipt(loaded)
+
     def test_digest_tamper_fails_closed(self):
         self.assertReceiptRejects(input_e2e_sha256="0" * 64)
 
