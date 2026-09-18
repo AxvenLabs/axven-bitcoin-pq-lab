@@ -84,6 +84,11 @@ class T(unittest.TestCase):
     def test_schema_version_tamper_fails_closed(self):
         self.assertReceiptRejects(schema_version=2)
 
+    def test_validator_schema_version_tamper_matrix_fails_closed(self):
+        for value in (0, 2, -1, True, "1"):
+            with self.subTest(value=value):
+                self.assertReceiptRejects(validator_schema_version=value)
+
     def test_unknown_field_fails_closed(self):
         tampered = copy.deepcopy(self.receipt)
         tampered["production_authorized"] = True
