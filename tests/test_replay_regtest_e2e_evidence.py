@@ -50,6 +50,10 @@ class T(unittest.TestCase):
         )
         cls.evidence = build_e2e_evidence(chain, composition, benchmark, provenance)
 
+    def assertReplayRejects(self, evidence):
+        with self.assertRaises(ValueError):
+            replay_e2e_evidence(evidence)
+
     def test_receipt_is_deterministic_and_secret_free(self):
         first = replay_e2e_evidence(self.evidence)
         second = replay_e2e_evidence(copy.deepcopy(self.evidence))
@@ -64,17 +68,35 @@ class T(unittest.TestCase):
         for forbidden in ("private", "secret", "signature"):
             self.assertNotIn(forbidden, rendered)
 
-    def test_tampered_nested_evidence_fails_closed(self):
+    def test_tampered_chain_evidence_fails_closed(self):
         tampered = copy.deepcopy(self.evidence)
         tampered["chain_evidence"]["confirmation"]["block_height"] += 1
-        with self.assertRaises(ValueError):
-            replay_e2e_evidence(tampered)
+        self.assertReplayRejects(tampered)
+
+    def test_tampered_benchmark_evidence_fails_closed(self):
+        tampered = copy.deepcopy(self.evidence)
+        tampered["benchmark_evidence"]["benchmark_report"]["candidates"][0]["correctness_oracle"]["valid_signature_accepted"] = False
+        self.assertReplayRejects(tampered)
+
+    def test_tampered_provenance_evidence_fails_closed(self):
+        tampered = copy.deepcopy(self.evidence)
+        tampered["provenance_evidence"]["source_commit"] = "0" * 40
+        self.assertReplayRejects(tampered)
+
+    def test_reordered_candidate_evidence_fails_closed(self):
+        tampered = copy.deepcopy(self.evidence)
+        tampered["benchmark_evidence"]["benchmark_report"]["candidates"].reverse()
+        self.assertReplayRejects(tampered)
+
+    def test_missing_safety_boundary_fails_closed(self):
+        tampered = copy.deepcopy(self.evidence)
+        del tampered["off_consensus"]
+        self.assertReplayRejects(tampered)
 
     def test_overclaim_fails_closed(self):
         tampered = copy.deepcopy(self.evidence)
         tampered["mainnet_intended"] = True
-        with self.assertRaises(ValueError):
-            replay_e2e_evidence(tampered)
+        self.assertReplayRejects(tampered)
 
 
 if __name__ == "__main__":
