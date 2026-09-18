@@ -19,6 +19,7 @@ EXPECTED_KEYS = {
     "parameter_set_selected",
     "replay_receipt_sha256",
 }
+EXPECTED_VALIDATOR_SCHEMA_VERSION = 1
 
 
 def _canonical_digest(value: object) -> str:
@@ -32,8 +33,9 @@ def validate_replay_receipt(receipt: dict) -> str:
         raise ValueError("unexpected replay receipt fields")
     if receipt["schema_version"] != 1:
         raise ValueError("unsupported replay receipt schema")
-    if not isinstance(receipt["validator_schema_version"], int):
-        raise ValueError("invalid validator schema version")
+    validator_schema_version = receipt["validator_schema_version"]
+    if type(validator_schema_version) is not int or validator_schema_version != EXPECTED_VALIDATOR_SCHEMA_VERSION:
+        raise ValueError("unsupported validator schema version")
     digest = receipt["input_e2e_sha256"]
     if not isinstance(digest, str) or len(digest) != 64:
         raise ValueError("invalid input evidence digest")
