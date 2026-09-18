@@ -1,5 +1,8 @@
 import copy
+import json
+import tempfile
 import unittest
+from pathlib import Path
 
 try:
     from scripts.regtest_chain_evidence import build_chain_evidence
@@ -13,7 +16,7 @@ try:
     )
     from scripts.regtest_e2e_evidence import build_e2e_evidence
     from scripts.replay_regtest_e2e_evidence import replay_e2e_evidence
-    from scripts.validate_replay_receipt import validate_replay_receipt
+    from scripts.validate_replay_receipt import load_replay_receipt, validate_replay_receipt
 except (ImportError, ModuleNotFoundError):
     raise unittest.SkipTest("requires pinned ML-DSA backend")
 
@@ -62,6 +65,15 @@ class T(unittest.TestCase):
         second = validate_replay_receipt(copy.deepcopy(self.receipt))
         self.assertEqual(first, second)
         self.assertEqual(first, self.receipt["replay_receipt_sha256"])
+
+    def test_duplicate_json_field_fails_closed_at_load(self):
+        encoded = json.dumps(self.receipt, sort_keys=True, separators=(",", ":"))
+        duplicate = encoded[:-1] + ',"schema_version":1}'
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "receipt.json"
+            path.write_text(duplicate, encoding="utf-8")
+            with self.assertRaisesRegex(ValueError, "duplicate replay receipt field"):
+                load_replay_receipt(path)
 
     def test_digest_tamper_fails_closed(self):
         self.assertReceiptRejects(input_e2e_sha256="0" * 64)
