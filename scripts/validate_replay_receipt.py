@@ -38,6 +38,20 @@ def _is_canonical_sha256(value: object) -> bool:
     return len(raw) == 32
 
 
+def _reject_duplicate_pairs(pairs: list[tuple[str, object]]) -> dict:
+    result = {}
+    for key, value in pairs:
+        if key in result:
+            raise ValueError(f"duplicate replay receipt field: {key}")
+        result[key] = value
+    return result
+
+
+def load_replay_receipt(path: Path) -> object:
+    """Load receipt JSON without accepting duplicate object keys."""
+    return json.loads(path.read_text(encoding="utf-8"), object_pairs_hook=_reject_duplicate_pairs)
+
+
 def validate_replay_receipt(receipt: dict) -> str:
     """Fail closed unless a receipt is canonical, complete, and research-only."""
     if not isinstance(receipt, dict) or set(receipt) != EXPECTED_KEYS:
@@ -79,7 +93,7 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("receipt", type=Path)
     args = parser.parse_args()
-    receipt = json.loads(args.receipt.read_text(encoding="utf-8"))
+    receipt = load_replay_receipt(args.receipt)
     print(validate_replay_receipt(receipt))
     return 0
 
