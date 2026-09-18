@@ -41,7 +41,8 @@ def validate_replay_receipt(receipt: dict) -> str:
     """Fail closed unless a receipt is canonical, complete, and research-only."""
     if not isinstance(receipt, dict) or set(receipt) != EXPECTED_KEYS:
         raise ValueError("unexpected replay receipt fields")
-    if receipt["schema_version"] != 1:
+    schema_version = receipt["schema_version"]
+    if type(schema_version) is not int or schema_version != 1:
         raise ValueError("unsupported replay receipt schema")
     validator_schema_version = receipt["validator_schema_version"]
     if type(validator_schema_version) is not int or validator_schema_version != EXPECTED_VALIDATOR_SCHEMA_VERSION:
