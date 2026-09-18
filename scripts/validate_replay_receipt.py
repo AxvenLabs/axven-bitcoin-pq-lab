@@ -27,6 +27,16 @@ def _canonical_digest(value: object) -> str:
     return hashlib.sha256(encoded).hexdigest()
 
 
+def _is_canonical_sha256(value: object) -> bool:
+    if not isinstance(value, str) or len(value) != 64 or value != value.lower():
+        return False
+    try:
+        raw = bytes.fromhex(value)
+    except ValueError:
+        return False
+    return len(raw) == 32
+
+
 def validate_replay_receipt(receipt: dict) -> str:
     """Fail closed unless a receipt is canonical, complete, and research-only."""
     if not isinstance(receipt, dict) or set(receipt) != EXPECTED_KEYS:
@@ -37,12 +47,8 @@ def validate_replay_receipt(receipt: dict) -> str:
     if type(validator_schema_version) is not int or validator_schema_version != EXPECTED_VALIDATOR_SCHEMA_VERSION:
         raise ValueError("unsupported validator schema version")
     digest = receipt["input_e2e_sha256"]
-    if not isinstance(digest, str) or len(digest) != 64:
+    if not _is_canonical_sha256(digest):
         raise ValueError("invalid input evidence digest")
-    try:
-        bytes.fromhex(digest)
-    except ValueError as exc:
-        raise ValueError("invalid input evidence digest") from exc
     if receipt["validator_result"] != "accepted":
         raise ValueError("replay receipt is not accepted")
     expected_safety = {
@@ -57,7 +63,7 @@ def validate_replay_receipt(receipt: dict) -> str:
             raise ValueError(f"invalid safety boundary: {key}")
 
     claimed = receipt["replay_receipt_sha256"]
-    if not isinstance(claimed, str) or len(claimed) != 64:
+    if not _is_canonical_sha256(claimed):
         raise ValueError("invalid replay receipt digest")
     unsigned = dict(receipt)
     del unsigned["replay_receipt_sha256"]

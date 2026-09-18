@@ -66,6 +66,13 @@ class T(unittest.TestCase):
     def test_digest_tamper_fails_closed(self):
         self.assertReceiptRejects(input_e2e_sha256="0" * 64)
 
+    def test_digest_encoding_matrix_fails_closed(self):
+        digest = self.receipt["input_e2e_sha256"]
+        cases = (digest.upper(), "g" * 64, digest[:-1], digest + "0")
+        for value in cases:
+            with self.subTest(value=value):
+                self.assertReceiptRejects(input_e2e_sha256=value)
+
     def test_safety_boundary_tamper_matrix_fails_closed(self):
         cases = {
             "research_only": False,
@@ -103,6 +110,13 @@ class T(unittest.TestCase):
 
     def test_receipt_hash_tamper_fails_closed(self):
         self.assertReceiptRejects(replay_receipt_sha256="f" * 64)
+
+    def test_receipt_hash_encoding_matrix_fails_closed(self):
+        digest = self.receipt["replay_receipt_sha256"]
+        cases = (digest.upper(), "g" * 64, digest[:-1], digest + "0")
+        for value in cases:
+            with self.subTest(value=value):
+                self.assertReceiptRejects(replay_receipt_sha256=value)
 
 
 if __name__ == "__main__":
