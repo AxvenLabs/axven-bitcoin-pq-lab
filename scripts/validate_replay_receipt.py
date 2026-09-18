@@ -47,9 +47,17 @@ def _reject_duplicate_pairs(pairs: list[tuple[str, object]]) -> dict:
     return result
 
 
+def _reject_nonstandard_constant(value: str) -> object:
+    raise ValueError(f"non-standard JSON constant: {value}")
+
+
 def load_replay_receipt(path: Path) -> object:
-    """Load receipt JSON without accepting duplicate object keys."""
-    return json.loads(path.read_text(encoding="utf-8"), object_pairs_hook=_reject_duplicate_pairs)
+    """Load strict receipt JSON without duplicate keys or non-standard constants."""
+    return json.loads(
+        path.read_text(encoding="utf-8"),
+        object_pairs_hook=_reject_duplicate_pairs,
+        parse_constant=_reject_nonstandard_constant,
+    )
 
 
 def validate_replay_receipt(receipt: dict) -> str:
