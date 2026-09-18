@@ -75,6 +75,16 @@ class T(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "duplicate replay receipt field"):
                 load_replay_receipt(path)
 
+    def test_nonstandard_json_constants_fail_closed_at_load(self):
+        encoded = json.dumps(self.receipt, sort_keys=True, separators=(",", ":"))
+        for constant in ("NaN", "Infinity", "-Infinity"):
+            with self.subTest(constant=constant), tempfile.TemporaryDirectory() as tmp:
+                path = Path(tmp) / "receipt.json"
+                tampered = encoded.replace('"schema_version":1', f'"schema_version":{constant}', 1)
+                path.write_text(tampered, encoding="utf-8")
+                with self.assertRaisesRegex(ValueError, "non-standard JSON constant"):
+                    load_replay_receipt(path)
+
     def test_digest_tamper_fails_closed(self):
         self.assertReceiptRejects(input_e2e_sha256="0" * 64)
 
