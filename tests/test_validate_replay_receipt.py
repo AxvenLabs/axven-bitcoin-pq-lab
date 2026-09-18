@@ -16,7 +16,7 @@ try:
     )
     from scripts.regtest_e2e_evidence import build_e2e_evidence
     from scripts.replay_regtest_e2e_evidence import replay_e2e_evidence
-    from scripts.validate_replay_receipt import load_replay_receipt, validate_replay_receipt
+    from scripts.validate_replay_receipt import MAX_RECEIPT_BYTES, load_replay_receipt, validate_replay_receipt
 except (ImportError, ModuleNotFoundError):
     raise unittest.SkipTest("requires pinned ML-DSA backend")
 
@@ -73,6 +73,13 @@ class T(unittest.TestCase):
             path = Path(tmp) / "receipt.json"
             path.write_text(duplicate, encoding="utf-8")
             with self.assertRaisesRegex(ValueError, "duplicate replay receipt field"):
+                load_replay_receipt(path)
+
+    def test_oversized_json_fails_closed_before_parse(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "receipt.json"
+            path.write_bytes(b" " * (MAX_RECEIPT_BYTES + 1))
+            with self.assertRaisesRegex(ValueError, "replay receipt exceeds size limit"):
                 load_replay_receipt(path)
 
     def test_digest_tamper_fails_closed(self):
