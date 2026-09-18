@@ -50,7 +50,8 @@ def _reject_duplicate_pairs(pairs: list[tuple[str, object]]) -> dict:
 
 def load_replay_receipt(path: Path) -> object:
     """Load a bounded receipt JSON without accepting duplicate object keys."""
-    raw = path.read_bytes()
+    with path.open("rb") as handle:
+        raw = handle.read(MAX_RECEIPT_BYTES + 1)
     if len(raw) > MAX_RECEIPT_BYTES:
         raise ValueError("replay receipt exceeds size limit")
     text = raw.decode("utf-8")
