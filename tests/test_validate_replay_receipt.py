@@ -51,6 +51,12 @@ class T(unittest.TestCase):
         )
         cls.receipt = replay_e2e_evidence(build_e2e_evidence(chain, composition, benchmark, provenance))
 
+    def assertReceiptRejects(self, **changes):
+        tampered = copy.deepcopy(self.receipt)
+        tampered.update(changes)
+        with self.assertRaises(ValueError):
+            validate_replay_receipt(tampered)
+
     def test_intact_receipt_validates_deterministically(self):
         first = validate_replay_receipt(self.receipt)
         second = validate_replay_receipt(copy.deepcopy(self.receipt))
@@ -58,16 +64,25 @@ class T(unittest.TestCase):
         self.assertEqual(first, self.receipt["replay_receipt_sha256"])
 
     def test_digest_tamper_fails_closed(self):
-        tampered = copy.deepcopy(self.receipt)
-        tampered["input_e2e_sha256"] = "0" * 64
-        with self.assertRaises(ValueError):
-            validate_replay_receipt(tampered)
+        self.assertReceiptRejects(input_e2e_sha256="0" * 64)
 
-    def test_safety_overclaim_fails_closed(self):
-        tampered = copy.deepcopy(self.receipt)
-        tampered["mainnet_intended"] = True
-        with self.assertRaises(ValueError):
-            validate_replay_receipt(tampered)
+    def test_safety_boundary_tamper_matrix_fails_closed(self):
+        cases = {
+            "research_only": False,
+            "off_consensus": False,
+            "bitcoin_core_modified": True,
+            "mainnet_intended": True,
+            "parameter_set_selected": True,
+        }
+        for key, value in cases.items():
+            with self.subTest(key=key):
+                self.assertReceiptRejects(**{key: value})
+
+    def test_validator_result_tamper_fails_closed(self):
+        self.assertReceiptRejects(validator_result="rejected")
+
+    def test_schema_version_tamper_fails_closed(self):
+        self.assertReceiptRejects(schema_version=2)
 
     def test_unknown_field_fails_closed(self):
         tampered = copy.deepcopy(self.receipt)
@@ -75,11 +90,14 @@ class T(unittest.TestCase):
         with self.assertRaises(ValueError):
             validate_replay_receipt(tampered)
 
-    def test_receipt_hash_tamper_fails_closed(self):
+    def test_missing_field_fails_closed(self):
         tampered = copy.deepcopy(self.receipt)
-        tampered["replay_receipt_sha256"] = "f" * 64
+        del tampered["off_consensus"]
         with self.assertRaises(ValueError):
             validate_replay_receipt(tampered)
+
+    def test_receipt_hash_tamper_fails_closed(self):
+        self.assertReceiptRejects(replay_receipt_sha256="f" * 64)
 
 
 if __name__ == "__main__":
