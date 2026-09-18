@@ -88,8 +88,10 @@ class T(unittest.TestCase):
     def test_validator_result_tamper_fails_closed(self):
         self.assertReceiptRejects(validator_result="rejected")
 
-    def test_schema_version_tamper_fails_closed(self):
-        self.assertReceiptRejects(schema_version=2)
+    def test_schema_version_tamper_matrix_fails_closed(self):
+        for value in (0, 2, -1, True, "1"):
+            with self.subTest(value=value):
+                self.assertReceiptRejects(schema_version=value)
 
     def test_validator_schema_version_tamper_matrix_fails_closed(self):
         for value in (0, 2, -1, True, "1"):
