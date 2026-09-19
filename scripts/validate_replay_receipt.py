@@ -22,6 +22,7 @@ EXPECTED_KEYS = {
 EXPECTED_SCHEMA_VERSION = 1
 EXPECTED_VALIDATOR_SCHEMA_VERSION = 2
 MAX_RECEIPT_BYTES = 64 * 1024
+MAX_JSON_NESTING = 128
 
 
 def _canonical_digest(value: object) -> str:
@@ -52,6 +53,30 @@ def _reject_nonstandard_constant(value: str) -> object:
     raise ValueError(f"non-standard JSON constant: {value}")
 
 
+def _reject_excessive_nesting(text: str) -> None:
+    """Bound structural JSON nesting without counting brackets inside strings."""
+    depth = 0
+    in_string = False
+    escaped = False
+    for char in text:
+        if in_string:
+            if escaped:
+                escaped = False
+            elif char == "\\":
+                escaped = True
+            elif char == '"':
+                in_string = False
+            continue
+        if char == '"':
+            in_string = True
+        elif char in "[{":
+            depth += 1
+            if depth > MAX_JSON_NESTING:
+                raise ValueError("replay receipt JSON nesting is too deep")
+        elif char in "]}":
+            depth = max(0, depth - 1)
+
+
 def load_replay_receipt(path: Path) -> object:
     """Load bounded canonical JSON: strict UTF-8, unique keys, standard constants."""
     with path.open("rb") as handle:
@@ -64,11 +89,15 @@ def load_replay_receipt(path: Path) -> object:
         raise ValueError("replay receipt is not valid UTF-8") from exc
     if text.startswith("\ufeff"):
         raise ValueError("replay receipt must not contain a UTF-8 BOM")
-    return json.loads(
-        text,
-        object_pairs_hook=_reject_duplicate_pairs,
-        parse_constant=_reject_nonstandard_constant,
-    )
+    _reject_excessive_nesting(text)
+    try:
+        return json.loads(
+            text,
+            object_pairs_hook=_reject_duplicate_pairs,
+            parse_constant=_reject_nonstandard_constant,
+        )
+    except RecursionError as exc:
+        raise ValueError("replay receipt JSON nesting is too deep") from exc
 
 
 def validate_replay_receipt(receipt: dict) -> str:

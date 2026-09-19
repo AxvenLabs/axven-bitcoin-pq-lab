@@ -16,7 +16,7 @@ try:
     )
     from scripts.regtest_e2e_evidence import build_e2e_evidence
     from scripts.replay_regtest_e2e_evidence import replay_e2e_evidence
-    from scripts.validate_replay_receipt import MAX_RECEIPT_BYTES, load_replay_receipt, validate_replay_receipt
+    from scripts.validate_replay_receipt import MAX_JSON_NESTING, MAX_RECEIPT_BYTES, load_replay_receipt, validate_replay_receipt
 except (ImportError, ModuleNotFoundError):
     raise unittest.SkipTest("requires pinned ML-DSA backend")
 
@@ -81,6 +81,22 @@ class T(unittest.TestCase):
             path.write_bytes(b" " * (MAX_RECEIPT_BYTES + 1))
             with self.assertRaisesRegex(ValueError, "replay receipt exceeds size limit"):
                 load_replay_receipt(path)
+
+    def test_excessive_json_nesting_fails_closed_at_load(self):
+        nested = "[" * (MAX_JSON_NESTING + 1) + "0" + "]" * (MAX_JSON_NESTING + 1)
+        self.assertLess(len(nested.encode("utf-8")), MAX_RECEIPT_BYTES)
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "receipt.json"
+            path.write_text(nested, encoding="utf-8")
+            with self.assertRaisesRegex(ValueError, "replay receipt JSON nesting is too deep"):
+                load_replay_receipt(path)
+
+    def test_brackets_inside_json_string_do_not_count_as_nesting(self):
+        value = "[" * (MAX_JSON_NESTING + 1) + "]" * (MAX_JSON_NESTING + 1)
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "receipt.json"
+            path.write_text(json.dumps(value), encoding="utf-8")
+            self.assertEqual(load_replay_receipt(path), value)
 
     def test_invalid_utf8_fails_closed_at_load(self):
         with tempfile.TemporaryDirectory() as tmp:
