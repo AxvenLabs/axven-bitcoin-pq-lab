@@ -64,11 +64,14 @@ def load_replay_receipt(path: Path) -> object:
         raise ValueError("replay receipt is not valid UTF-8") from exc
     if text.startswith("\ufeff"):
         raise ValueError("replay receipt must not contain a UTF-8 BOM")
-    return json.loads(
-        text,
-        object_pairs_hook=_reject_duplicate_pairs,
-        parse_constant=_reject_nonstandard_constant,
-    )
+    try:
+        return json.loads(
+            text,
+            object_pairs_hook=_reject_duplicate_pairs,
+            parse_constant=_reject_nonstandard_constant,
+        )
+    except RecursionError as exc:
+        raise ValueError("replay receipt JSON nesting is too deep") from exc
 
 
 def validate_replay_receipt(receipt: dict) -> str:
