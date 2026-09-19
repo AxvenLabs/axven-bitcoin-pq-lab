@@ -82,6 +82,15 @@ class T(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "replay receipt exceeds size limit"):
                 load_replay_receipt(path)
 
+    def test_excessive_json_nesting_fails_closed_at_load(self):
+        nested = "[" * 2000 + "0" + "]" * 2000
+        self.assertLess(len(nested.encode("utf-8")), MAX_RECEIPT_BYTES)
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "receipt.json"
+            path.write_text(nested, encoding="utf-8")
+            with self.assertRaisesRegex(ValueError, "replay receipt JSON nesting is too deep"):
+                load_replay_receipt(path)
+
     def test_invalid_utf8_fails_closed_at_load(self):
         with tempfile.TemporaryDirectory() as tmp:
             path = Path(tmp) / "receipt.json"
