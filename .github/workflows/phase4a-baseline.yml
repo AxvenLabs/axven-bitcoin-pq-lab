@@ -1,0 +1,46 @@
+name: Phase 4A baseline reproducibility
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  phase4a-baseline:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install pinned ML-DSA research backend
+        run: python -m pip install --disable-pip-version-check cryptography==48.0.0
+      - name: Verify pinned Bitcoin Core source identity
+        run: python -m scripts.verify_upstream_pin >/tmp/phase4a-upstream-pin.json
+      - name: Run complete Python regression discovery with ML-DSA backend present
+        run: python -m unittest discover -s tests -v
+      - name: Require deterministic existing vector manifest and independent validation
+        run: |
+          python - <<'PY'
+          import json
+          from scripts.build_regtest_vector_manifest import build_manifest
+          from scripts.validate_regtest_vector_manifest import validate_manifest
+
+          first = build_manifest()
+          second = build_manifest()
+          first_bytes = json.dumps(first, sort_keys=True, separators=(",", ":")).encode("utf-8")
+          second_bytes = json.dumps(second, sort_keys=True, separators=(",", ":")).encode("utf-8")
+          assert first_bytes == second_bytes
+          first_digest = validate_manifest(first)
+          second_digest = validate_manifest(second)
+          assert first_digest == second_digest == first["manifest_sha256"]
+          assert first["research_only"] is True
+          assert first["off_consensus"] is True
+          assert first["mainnet_intended"] is False
+          assert first["bitcoin_core_modified"] is False
+          assert first["parameter_set_selected"] is False
+          print(first_digest)
+          PY
