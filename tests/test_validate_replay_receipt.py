@@ -82,6 +82,13 @@ class T(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "replay receipt exceeds size limit"):
                 load_replay_receipt(path)
 
+    def test_invalid_utf8_fails_closed_at_load(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "receipt.json"
+            path.write_bytes(b'{"schema_version":1,"bad":"\xff"}')
+            with self.assertRaisesRegex(ValueError, "replay receipt is not valid UTF-8"):
+                load_replay_receipt(path)
+
     def test_digest_tamper_fails_closed(self):
         self.assertReceiptRejects(input_e2e_sha256="0" * 64)
 
