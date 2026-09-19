@@ -149,7 +149,8 @@ class T(unittest.TestCase):
                 self.assertReceiptRejects(schema_version=value)
 
     def test_validator_schema_version_tamper_matrix_fails_closed(self):
-        for value in (0, 2, -1, True, "1", 1.0):
+        expected = self.receipt["validator_schema_version"]
+        for value in (0, 1, 3, -1, True, str(expected), float(expected)):
             with self.subTest(value=value):
                 self.assertReceiptRejects(validator_schema_version=value)
 
