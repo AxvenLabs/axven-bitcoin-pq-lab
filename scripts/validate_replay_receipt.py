@@ -21,6 +21,7 @@ EXPECTED_KEYS = {
 }
 EXPECTED_SCHEMA_VERSION = 1
 EXPECTED_VALIDATOR_SCHEMA_VERSION = 1
+MAX_RECEIPT_BYTES = 64 * 1024
 
 
 def _canonical_digest(value: object) -> str:
@@ -48,8 +49,13 @@ def _reject_duplicate_pairs(pairs: list[tuple[str, object]]) -> dict:
 
 
 def load_replay_receipt(path: Path) -> object:
-    """Load receipt JSON without accepting duplicate object keys."""
-    return json.loads(path.read_text(encoding="utf-8"), object_pairs_hook=_reject_duplicate_pairs)
+    """Load a bounded receipt JSON without accepting duplicate object keys."""
+    with path.open("rb") as handle:
+        raw = handle.read(MAX_RECEIPT_BYTES + 1)
+    if len(raw) > MAX_RECEIPT_BYTES:
+        raise ValueError("replay receipt exceeds size limit")
+    text = raw.decode("utf-8")
+    return json.loads(text, object_pairs_hook=_reject_duplicate_pairs)
 
 
 def validate_replay_receipt(receipt: dict) -> str:
