@@ -49,12 +49,17 @@ def _reject_duplicate_pairs(pairs: list[tuple[str, object]]) -> dict:
 
 
 def load_replay_receipt(path: Path) -> object:
-    """Load a bounded receipt JSON without accepting duplicate object keys."""
+    """Load a bounded, strict UTF-8 receipt JSON without duplicate object keys."""
     with path.open("rb") as handle:
         raw = handle.read(MAX_RECEIPT_BYTES + 1)
     if len(raw) > MAX_RECEIPT_BYTES:
         raise ValueError("replay receipt exceeds size limit")
-    text = raw.decode("utf-8")
+    try:
+        text = raw.decode("utf-8", errors="strict")
+    except UnicodeDecodeError as exc:
+        raise ValueError("replay receipt is not valid UTF-8") from exc
+    if text.startswith("\ufeff"):
+        raise ValueError("replay receipt must not contain a UTF-8 BOM")
     return json.loads(text, object_pairs_hook=_reject_duplicate_pairs)
 
 
