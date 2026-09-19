@@ -48,8 +48,12 @@ def _reject_duplicate_pairs(pairs: list[tuple[str, object]]) -> dict:
     return result
 
 
+def _reject_nonstandard_constant(value: str) -> object:
+    raise ValueError(f"non-standard JSON constant: {value}")
+
+
 def load_replay_receipt(path: Path) -> object:
-    """Load a bounded, strict UTF-8 receipt JSON without duplicate object keys."""
+    """Load bounded canonical JSON: strict UTF-8, unique keys, standard constants."""
     with path.open("rb") as handle:
         raw = handle.read(MAX_RECEIPT_BYTES + 1)
     if len(raw) > MAX_RECEIPT_BYTES:
@@ -60,7 +64,11 @@ def load_replay_receipt(path: Path) -> object:
         raise ValueError("replay receipt is not valid UTF-8") from exc
     if text.startswith("\ufeff"):
         raise ValueError("replay receipt must not contain a UTF-8 BOM")
-    return json.loads(text, object_pairs_hook=_reject_duplicate_pairs)
+    return json.loads(
+        text,
+        object_pairs_hook=_reject_duplicate_pairs,
+        parse_constant=_reject_nonstandard_constant,
+    )
 
 
 def validate_replay_receipt(receipt: dict) -> str:
