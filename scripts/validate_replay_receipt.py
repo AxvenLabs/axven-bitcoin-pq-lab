@@ -54,7 +54,10 @@ def load_replay_receipt(path: Path) -> object:
         raw = handle.read(MAX_RECEIPT_BYTES + 1)
     if len(raw) > MAX_RECEIPT_BYTES:
         raise ValueError("replay receipt exceeds size limit")
-    text = raw.decode("utf-8")
+    try:
+        text = raw.decode("utf-8")
+    except UnicodeDecodeError as exc:
+        raise ValueError("replay receipt is not valid UTF-8") from exc
     return json.loads(text, object_pairs_hook=_reject_duplicate_pairs)
 
 
